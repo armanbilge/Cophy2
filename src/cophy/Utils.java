@@ -63,4 +63,12 @@ public final class Utils {
         
     }
     
+    public static final boolean lineageExistedAtHeight(Node node,
+            double height) {
+        
+        return node.getHeight() <= height &&
+                (node.isRoot() || node.getParent().getHeight() > height);
+        
+    }
+    
 }

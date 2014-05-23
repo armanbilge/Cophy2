@@ -22,31 +22,30 @@
 package cophy;
 
 import java.io.PrintStream;
-import java.util.Arrays;
 
 import beast.core.StateNode;
-import beast.evolution.tree.Tree;
 import beast.evolution.tree.Node;
+import beast.evolution.tree.Tree;
 
 /**
- * @author Arman D. Bilge
+ * @author Arman D. Bilge <armanbilge@gmail.com>
  *
  */
 public class Reconciliation extends StateNode {
 
-    private final Tree hostTree;
-    private final Tree containedTree;
-    private final int[] map;
-    private final int[] storedMap;
+    protected final Tree embeddedTree;
+    protected final Tree hostTree;
+    protected final int[] map;
+    protected final int[] storedMap;
     
     /**
      * 
      */
-    public Reconciliation(Tree hostTree, Tree containedTree) {
+    public Reconciliation(Tree hostTree, Tree embeddedTree) {
         
         this.hostTree = hostTree;
-        this.containedTree = containedTree;
-        map = new int[containedTree.getNodeCount()];
+        this.embeddedTree = embeddedTree;
+        map = new int[embeddedTree.getNodeCount()];
         storedMap = new int[map.length];
                 
     }
@@ -119,7 +118,7 @@ public class Reconciliation extends StateNode {
      */
     @Override
     public StateNode copy() {
-        Reconciliation copy = new Reconciliation(hostTree, containedTree);
+        Reconciliation copy = new Reconciliation(hostTree, embeddedTree);
         System.arraycopy(map, 0, copy.map, 0, map.length);
         System.arraycopy(storedMap, 0, copy.storedMap, 0, storedMap.length);
         return copy;
@@ -199,30 +198,30 @@ public class Reconciliation extends StateNode {
         System.arraycopy(storedMap, 0, map, 0, map.length);
     }
 
-    public Node getAssociation(Node containedNode) {
+    public Node getHost(Node embeddedNode) {
         
-        if (containedNode.getTree() != containedTree)
-            throw new IllegalArgumentException("containedNode must belong to "
-                    + "containedTree");
+        if (embeddedNode.getTree() != embeddedTree)
+            throw new IllegalArgumentException("embeddedNode must belong to "
+                    + "embeddedTree");
 
-        return hostTree.getNode(map[containedNode.getNr()]);
+        return hostTree.getNode(map[embeddedNode.getNr()]);
         
     }
     
-    public void setAssociation(Node containedNode, Node hostNode) {
+    public void setHost(Node embeddedNode, Node hostNode) {
         
         if (!hasStartedEditing)
-            throw new RuntimeException("Have not started editing");
+            throw new RuntimeException("Have not started editing!");
         
-        if (containedNode.getTree() != containedTree)
-            throw new IllegalArgumentException("containedNode must belong to "
-                    + "containedTree");
+        if (embeddedNode.getTree() != embeddedTree)
+            throw new IllegalArgumentException("embeddedNode must belong to "
+                    + "embeddedTree");
         
         if (hostNode.getTree() != hostTree)
             throw new IllegalArgumentException("hostNode must belong to "
                     + "hostTree");
 
-        map[containedNode.getNr()] = hostNode.getNr();
+        map[embeddedNode.getNr()] = hostNode.getNr();
         
     }
         
