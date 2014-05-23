@@ -33,22 +33,15 @@ import beast.evolution.tree.Tree;
  */
 public class Reconciliation extends StateNode {
 
-    protected final Tree embeddedTree;
-    protected final Tree hostTree;
-    protected final int[] map;
-    protected final int[] storedMap;
+    protected Tree embeddedTree;
+    protected Tree hostTree;
+    protected int[] map;
+    protected int[] storedMap;
     
     /**
      * 
      */
-    public Reconciliation(Tree hostTree, Tree embeddedTree) {
-        
-        this.hostTree = hostTree;
-        this.embeddedTree = embeddedTree;
-        map = new int[embeddedTree.getNodeCount()];
-        storedMap = new int[map.length];
-                
-    }
+    public Reconciliation() {}
 
     /* (non-Javadoc)
      * @see beast.core.Loggable#init(java.io.PrintStream)
@@ -118,7 +111,9 @@ public class Reconciliation extends StateNode {
      */
     @Override
     public StateNode copy() {
-        Reconciliation copy = new Reconciliation(hostTree, embeddedTree);
+        Reconciliation copy = new Reconciliation();
+        copy.embeddedTree = embeddedTree;
+        copy.hostTree = hostTree;
         System.arraycopy(map, 0, copy.map, 0, map.length);
         System.arraycopy(storedMap, 0, copy.storedMap, 0, storedMap.length);
         return copy;
@@ -224,5 +219,12 @@ public class Reconciliation extends StateNode {
         map[embeddedNode.getNr()] = hostNode.getNr();
         
     }
+    
+    public boolean notarizeTrees(Tree embeddedTree, Tree hostTree) {
         
+        return embeddedTree == this.embeddedTree &&
+                hostTree == this.hostTree;
+    
+    }
+    
 }

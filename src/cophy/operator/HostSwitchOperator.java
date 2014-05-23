@@ -38,40 +38,37 @@ import beast.util.Randomizer;
  */
 public class HostSwitchOperator extends Operator {
 
-    public Input<Tree> embeddedTreeInput = new Input<Tree>("embedded tree",
+    public Input<Tree> embeddedTreeInput = new Input<Tree>("embeddedTree",
             "The tree embedded within the host tree.",
             Input.Validate.REQUIRED);
-    public Input<Tree> hostTreeInput = new Input<Tree>("host tree",
+    public Input<Tree> hostTreeInput = new Input<Tree>("hostTree",
             "The host, or container, tree.", Input.Validate.REQUIRED);
     public Input<Reconciliation> reconciliationInput =
             new Input<Reconciliation>("reconciliation", "A mapping of nodes of"
                     + " the embedded tree to nodes of its host tree",
                     Input.Validate.REQUIRED);
     public Input<Parameter<Double>> originHeightParameterInput =
-            new Input<Parameter<Double>>("origin height", "Parameter"
+            new Input<Parameter<Double>>("originHeight", "Parameter"
                     + " specifying the origin of the embedded process",
                     Input.Validate.REQUIRED);
-    
-    protected final Tree embeddedTree;
-    protected final Tree hostTree;
-    protected final Reconciliation reconciliation;
-    protected final Parameter<Double> originHeightParameter;
-    
-    /**
-     * 
-     */
-    public HostSwitchOperator(Tree embeddedTree, Tree hostTree,
-            Reconciliation reconciliation, Parameter<Double> originHeight) {
         
-        this.embeddedTree = embeddedTree;
-        this.hostTree = hostTree;
-        this.reconciliation = reconciliation;
-        this.originHeightParameter = originHeight;
+    public HostSwitchOperator() {}
+    
+    public void initAndValidate() throws Exception {
         
+        if (!reconciliationInput.get()
+                .notarizeTrees(embeddedTreeInput.get(), hostTreeInput.get()))
+            throw new Exception("Given trees do not belong to reconciliation.");
     }
 
     @Override
     public double proposal() {
+        
+        Tree embeddedTree = embeddedTreeInput.get(this);
+        Tree hostTree = hostTreeInput.get(this);
+        Reconciliation reconciliation = reconciliationInput.get(this);
+        Parameter<Double> originHeightParameter =
+                originHeightParameterInput.get(this);
         
         Node embeddedNode = embeddedTree.getInternalNodes()
                 .get(Randomizer.nextInt(embeddedTree.getInternalNodeCount()));
@@ -85,10 +82,8 @@ public class HostSwitchOperator extends Operator {
         Node proposedHostNode = potentialNewHosts.get(
                 Randomizer.nextInt(potentialNewHosts.size()));
         Node currentHostNode = reconciliation.getHost(embeddedNode);
-        if (proposedHostNode == currentHostNode) {
-            reject(-2);
-            return 0.0;
-        }
+        if (proposedHostNode == currentHostNode)
+            return Double.NEGATIVE_INFINITY;
         double hastingsRatio = 1.0;
         if (!Utils.lineageExistedAtHeight(proposedHostNode,
                 embeddedNode.getHeight())) {
