@@ -33,7 +33,7 @@ import beast.evolution.tree.Tree;
  */
 public final class Utils {
 
-    public Utils() {}
+    private Utils() {}
 
     public static final List<Node> getLineagesInHeightRange(Tree tree,
             double lower, double upper) {
