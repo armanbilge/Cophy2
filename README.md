@@ -1,2 +1,2 @@
 # Cophy
-Cophylogenetics for [BEAST 2](//www.beast2.org).
+Cophylogenetics for [BEAST 2](http://www.beast2.org).
