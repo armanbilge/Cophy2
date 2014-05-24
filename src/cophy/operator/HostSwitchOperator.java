@@ -54,11 +54,12 @@ public class HostSwitchOperator extends Operator {
         
     public HostSwitchOperator() {}
     
-    public void initAndValidate() throws Exception {
+    public void initAndValidate() {
         
         if (!reconciliationInput.get()
                 .notarizeTrees(embeddedTreeInput.get(), hostTreeInput.get()))
-            throw new Exception("Given trees do not belong to reconciliation.");
+            throw new RuntimeException("Given trees do not belong to"
+                    + "reconciliation.");
     }
 
     @Override
