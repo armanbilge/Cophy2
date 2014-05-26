@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import beast.core.CalculationNode;
+import beast.core.Function;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.parameter.IntegerParameter;
@@ -36,7 +37,7 @@ import beast.evolution.tree.Tree;
  * @author Arman D. Bilge <armanbilge@gmail.com>
  *
  */
-public class Reconciliation extends CalculationNode {
+public class Reconciliation extends CalculationNode implements Function {
 
     public Input<Tree> embeddedTreeInput = new Input<Tree>("embeddedTree", 
             "The embedded, or contained, tree.", Validate.REQUIRED);
@@ -76,16 +77,27 @@ public class Reconciliation extends CalculationNode {
     }
     
     public Node getHost(Node embeddedNode) {
-
         int hostNodeNr = mapInput.get().getNativeValue(embeddedNode.getNr());
         return hostTreeInput.get().getNode(hostNodeNr);
-        
     }
     
     public void setHost(Node embeddedNode, Node hostNode) {
-        
         mapInput.get().setValue(embeddedNode.getNr(), hostNode.getNr());
-        
+    }
+
+    @Override
+    public int getDimension() {
+        return mapInput.get().getDimension();
+    }
+
+    @Override
+    public double getArrayValue() {
+        return mapInput.get().getArrayValue();
+    }
+
+    @Override
+    public double getArrayValue(int iDim) {
+        return mapInput.get().getArrayValue(iDim);
     }
     
 }
