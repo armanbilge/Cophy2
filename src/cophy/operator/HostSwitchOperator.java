@@ -23,14 +23,14 @@ package cophy.operator;
 
 import java.util.List;
 
-import cophy.Reconciliation;
-import cophy.Utils;
 import beast.core.Input;
 import beast.core.Operator;
-import beast.core.parameter.Parameter;
+import beast.core.parameter.RealParameter;
 import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
 import beast.util.Randomizer;
+import cophy.Reconciliation;
+import cophy.Utils;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
@@ -47,20 +47,14 @@ public class HostSwitchOperator extends Operator {
             new Input<Reconciliation>("reconciliation", "A mapping of nodes of"
                     + " the embedded tree to nodes of its host tree",
                     Input.Validate.REQUIRED);
-    public Input<Parameter<Double>> originHeightParameterInput =
-            new Input<Parameter<Double>>("originHeight", "Parameter"
+    public Input<RealParameter> originHeightParameterInput =
+            new Input<RealParameter>("originHeight", "Parameter"
                     + " specifying the origin of the embedded process",
                     Input.Validate.REQUIRED);
         
     public HostSwitchOperator() {}
     
-    public void initAndValidate() {
-        
-        if (!reconciliationInput.get()
-                .notarizeTrees(embeddedTreeInput.get(), hostTreeInput.get()))
-            throw new RuntimeException("Given trees do not belong to"
-                    + "reconciliation.");
-    }
+    public void initAndValidate() {}
 
     @Override
     public double proposal() {
@@ -68,22 +62,20 @@ public class HostSwitchOperator extends Operator {
         Tree embeddedTree = embeddedTreeInput.get(this);
         Tree hostTree = hostTreeInput.get(this);
         Reconciliation reconciliation = reconciliationInput.get(this);
-        Parameter<Double> originHeightParameter =
-                originHeightParameterInput.get(this);
+        double originHeight = originHeightParameterInput.get(this).getValue();
         
         Node embeddedNode = embeddedTree.getInternalNodes()
                 .get(Randomizer.nextInt(embeddedTree.getInternalNodeCount()));
         double lower = Math.max(embeddedNode.getChild(0).getHeight(),
                 embeddedNode.getChild(1).getHeight());
-        double upper = embeddedNode.isRoot() ?
-                originHeightParameter.getArrayValue() :
+        double upper = embeddedNode.isRoot() ? originHeight :
                     embeddedNode.getParent().getHeight();
         List<Node> potentialNewHosts =
                 Utils.getLineagesInHeightRange(hostTree, lower, upper);
         Node proposedHostNode = potentialNewHosts.get(
                 Randomizer.nextInt(potentialNewHosts.size()));
         Node currentHostNode = reconciliation.getHost(embeddedNode);
-        if (proposedHostNode == currentHostNode)
+        if (proposedHostNode.equals(currentHostNode))
             return Double.NEGATIVE_INFINITY;
         double hastingsRatio = 1.0;
         if (!Utils.lineageExistedAtHeight(proposedHostNode,

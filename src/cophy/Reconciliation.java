@@ -21,6 +21,9 @@
 
 package cophy;
 
+import beast.core.CalculationNode;
+import beast.core.Input;
+import beast.core.Input.Validate;
 import beast.core.parameter.IntegerParameter;
 import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
@@ -29,48 +32,38 @@ import beast.evolution.tree.Tree;
  * @author Arman D. Bilge <armanbilge@gmail.com>
  *
  */
-public class Reconciliation extends IntegerParameter {
+public class Reconciliation extends CalculationNode {
 
-    protected Tree embeddedTree;
-    protected Tree hostTree;
-    
+    public Input<Tree> embeddedTreeInput = new Input<Tree>("embeddedTree", 
+            "The embedded, or contained, tree.", Validate.REQUIRED);
+    public Input<Tree> hostTreeInput = new Input<Tree>("hostTree",
+            "The tree hosting the embedded tree.", Validate.REQUIRED);
+    public Input<IntegerParameter> mapInput = new Input<IntegerParameter>(
+            "map", "An integer parameter mapping embedded nodes to host nodes",
+            Validate.REQUIRED);
+        
     @Override
     public void initAndValidate() throws Exception {
+        
         super.initAndValidate();
-        setLower(0);
-        setUpper(hostTree.getNodeCount() - 1);
-        setDimension(embeddedTree.getNodeCount());
+        IntegerParameter map = mapInput.get();
+        map.setDimension(embeddedTreeInput.get().getNodeCount());
+        map.setLower(0);
+        map.setUpper(hostTreeInput.get().getNodeCount() - 1);
+        
     }
     
     public Node getHost(Node embeddedNode) {
-        
-        if (embeddedNode.getTree() != embeddedTree)
-            throw new IllegalArgumentException("embeddedNode must belong to "
-                    + "embeddedTree");
 
-        return hostTree.getNode(getValue(embeddedNode.getNr()));
+        int hostNodeNr = mapInput.get().getNativeValue(embeddedNode.getNr());
+        return hostTreeInput.get().getNode(hostNodeNr);
         
     }
     
     public void setHost(Node embeddedNode, Node hostNode) {
         
-        if (embeddedNode.getTree() != embeddedTree)
-            throw new IllegalArgumentException("embeddedNode must belong to "
-                    + "embeddedTree");
+        mapInput.get().setValue(embeddedNode.getNr(), hostNode.getNr());
         
-        if (hostNode.getTree() != hostTree)
-            throw new IllegalArgumentException("hostNode must belong to "
-                    + "hostTree");
-
-        setValue(embeddedNode.getNr(), hostNode.getNr());
-        
-    }
-    
-    public boolean notarizeTrees(Tree embeddedTree, Tree hostTree) {
-        
-        return embeddedTree == this.embeddedTree &&
-                hostTree == this.hostTree;
-    
     }
     
 }
