@@ -21,11 +21,15 @@
 
 package cophy;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import beast.core.CalculationNode;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.parameter.IntegerParameter;
 import beast.evolution.tree.Node;
+import beast.evolution.tree.TraitSet;
 import beast.evolution.tree.Tree;
 
 /**
@@ -41,15 +45,33 @@ public class Reconciliation extends CalculationNode {
     public Input<IntegerParameter> mapInput = new Input<IntegerParameter>(
             "map", "An integer parameter mapping embedded nodes to host nodes",
             Validate.REQUIRED);
+    public Input<TraitSet> traitSetInput = new Input<TraitSet>("hostTrait",
+            "The set of host traits for the embedded taxa.", Validate.REQUIRED);
         
     @Override
     public void initAndValidate() throws Exception {
         
         super.initAndValidate();
         IntegerParameter map = mapInput.get();
-        map.setDimension(embeddedTreeInput.get().getNodeCount());
+        Tree embeddedTree = embeddedTreeInput.get();
+        map.setDimension(embeddedTree.getNodeCount());
+        Tree hostTree = hostTreeInput.get();
         map.setLower(0);
-        map.setUpper(hostTreeInput.get().getNodeCount() - 1);
+        map.setUpper(hostTree.getNodeCount() - 1);
+        TraitSet hostTraitSet = traitSetInput.get();
+        
+        Map<String,Node> hostTaxon2Node = new HashMap<String,Node>();
+        for (int i = 0; i < hostTree.getNodeCount(); ++i) {
+            Node node = hostTree.getNode(i);
+            hostTaxon2Node.put(hostTree.getTaxonId(node), node);
+        }        
+        
+        for (Node embeddedNode : embeddedTree.getExternalNodes()) {
+            String hostTaxon =
+                    hostTraitSet.getStringValue(embeddedNode.getNr());
+            Node hostNode = hostTaxon2Node.get(hostTaxon);
+            setHost(embeddedNode, hostNode);
+        }
         
     }
     
