@@ -66,8 +66,8 @@ public class HostSwitchOperator extends Operator {
         
         Node embeddedNode = embeddedTree.getInternalNodes()
                 .get(Randomizer.nextInt(embeddedTree.getInternalNodeCount()));
-        double lower = Math.max(embeddedNode.getChild(0).getHeight(),
-                embeddedNode.getChild(1).getHeight());
+        double lower = Math.max(embeddedNode.getLeft().getHeight(),
+                embeddedNode.getRight().getHeight());
         double upper = embeddedNode.isRoot() ? originHeight :
                     embeddedNode.getParent().getHeight();
         List<Node> potentialNewHosts =
@@ -77,6 +77,7 @@ public class HostSwitchOperator extends Operator {
         Node currentHostNode = reconciliation.getHost(embeddedNode);
         if (proposedHostNode.equals(currentHostNode))
             return Double.NEGATIVE_INFINITY;
+        
         double hastingsRatio = 1.0;
         if (!Utils.lineageExistedAtHeight(proposedHostNode,
                 embeddedNode.getHeight())) {
