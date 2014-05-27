@@ -33,10 +33,6 @@ import cophy.Reconciliation;
  */
 public class LeafHostSwitchOperator extends HostSwitchOperator {
 
-    public LeafHostSwitchOperator() {
-        // TODO Auto-generated constructor stub
-    }
-
     @Override
     public double proposal() {
 
