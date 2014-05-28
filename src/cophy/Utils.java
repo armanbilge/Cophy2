@@ -71,4 +71,44 @@ public final class Utils {
         
     }
     
+    public static enum Relationship {
+        SELF,
+        DESCENDANT,
+        ANCESTOR,
+        SISTER,
+        COUSIN;
+    }
+    
+    public static final Relationship determineRelationship(Node self,
+            Node relative) {
+        
+        if (self.equals(relative)) return Relationship.SELF;
+        
+        if (!self.isRoot() && !relative.isRoot()
+                && self.getParent().equals(relative.getParent()))
+            return Relationship.SISTER;
+        
+        Node intermediate = relative;
+        while (!intermediate.isRoot()) {
+            intermediate = intermediate.getParent();
+            if (intermediate.equals(self)) return Relationship.DESCENDANT;
+        }
+        
+        intermediate = self;
+        while (!intermediate.isRoot()) {
+            intermediate = intermediate.getParent();
+            if (intermediate.equals(relative)) return Relationship.ANCESTOR;
+        }
+        
+        return Relationship.COUSIN;
+    }
+    
+    public static final boolean isCompleteCherry(Node parent, Node left,
+            Node right) {
+        
+        return determineRelationship(left, right) == Relationship.SISTER
+                && left.getParent().equals(parent);
+        
+    }
+    
 }
