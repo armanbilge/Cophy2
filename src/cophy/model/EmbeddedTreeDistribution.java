@@ -21,11 +21,20 @@
 
 package cophy.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import cophy.Reconciliation;
+import beast.core.CalculationNode;
 import beast.core.Distribution;
+import beast.core.Input;
 import beast.core.State;
+import beast.core.Input.Validate;
+import beast.core.parameter.RealParameter;
+import beast.evolution.branchratemodel.BranchRateModel;
+import beast.evolution.tree.Node;
+import beast.evolution.tree.Tree;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
@@ -33,38 +42,59 @@ import beast.core.State;
  */
 public abstract class EmbeddedTreeDistribution extends Distribution {
 
-    /**
-     * 
-     */
-    public EmbeddedTreeDistribution() {
-        // TODO Auto-generated constructor stub
-    }
-
-    /* (non-Javadoc)
-     * @see beast.core.Distribution#getArguments()
-     */
+    public Input<Tree> embeddedTreeInput = new Input<Tree>("embeddedTree", 
+            "The embedded, or contained, tree.", Validate.REQUIRED);
+    public Input<Reconciliation> reconciliationInput =
+            new Input<Reconciliation>("reconciliation",
+                    "The tree-tree mapping.", Validate.REQUIRED);
+    public Input<Tree> hostTreeInput = new Input<Tree>("hostTree",
+            "The tree hosting the embedded tree.", Validate.REQUIRED);
+    public Input<BranchRateModel> branchRateModelInput =
+            new Input<BranchRateModel>("clockModel", "The clock model.",
+                    Validate.REQUIRED);
+    public Input<RealParameter> originHeightParameterInput =
+            new Input<RealParameter>("originHeight", "The height of origin" +
+                    " for the embedded tree", Validate.REQUIRED);
+    public Input<RealParameter> duplicationRateParameterInput =
+            new Input<RealParameter>("duplicationRate",
+                    "The model duplication rate", Validate.REQUIRED);
+    public Input<RealParameter> hostSwitchRateParameterInput = 
+            new Input<RealParameter>("hostSwitchRate",
+                    "The model host-switch rate", Validate.REQUIRED);
+    public Input<RealParameter> lossRateParameterInput = 
+            new Input<RealParameter>("lossRate", "The model loss rate",
+                    Validate.REQUIRED);
+    
     @Override
     public List<String> getArguments() {
-        // TODO Auto-generated method stub
-        return null;
+        
+        List<String> arguments = new ArrayList<String>();
+        arguments.add(embeddedTreeInput.get().getID());
+        arguments.add(reconciliationInput.get().getID());
+        return arguments;
+        
     }
 
-    /* (non-Javadoc)
-     * @see beast.core.Distribution#getConditions()
-     */
     @Override
     public List<String> getConditions() {
-        // TODO Auto-generated method stub
-        return null;
+        
+        List<String> conditions = new ArrayList<String>();
+        conditions.add(hostTreeInput.get().getID());
+        conditions.add(((CalculationNode) branchRateModelInput.get()).getID());
+        conditions.add(originHeightParameterInput.get().getID());
+        conditions.add(duplicationRateParameterInput.get().getID());
+        conditions.add(hostSwitchRateParameterInput.get().getID());
+        conditions.add(lossRateParameterInput.get().getID());
+        return conditions;
+        
     }
 
-    /* (non-Javadoc)
-     * @see beast.core.Distribution#sample(beast.core.State, java.util.Random)
-     */
     @Override
     public void sample(State state, Random random) {
         // TODO Auto-generated method stub
 
     }
 
+    protected abstract double getOverallRate(Node embedded, Node host);
+    
 }

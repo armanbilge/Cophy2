@@ -22,6 +22,7 @@
 package cophy;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import beast.evolution.tree.Node;
@@ -108,6 +109,14 @@ public final class Utils {
         
         return determineRelationship(left, right) == Relationship.SISTER
                 && left.getParent().equals(parent);
+        
+    }
+    
+    public static final int sum(int[] values) {
+        
+        int sum = 0;
+        for (int i = 0; i < values.length; ++i) sum += values[i];
+        return sum;
         
     }
     
