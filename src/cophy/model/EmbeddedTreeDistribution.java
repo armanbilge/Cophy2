@@ -65,6 +65,15 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
             new Input<RealParameter>("lossRate", "The model loss rate",
                     Validate.REQUIRED);
     
+    public void initAndValidate() {
+        duplicationRateParameterInput.get()
+            .setBounds(0.0, Double.POSITIVE_INFINITY);
+        hostSwitchRateParameterInput.get()
+            .setBounds(0.0, Double.POSITIVE_INFINITY);
+        lossRateParameterInput.get()
+            .setBounds(0.0, Double.POSITIVE_INFINITY);
+    }
+    
     @Override
     public List<String> getArguments() {
         
