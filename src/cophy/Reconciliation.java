@@ -22,6 +22,7 @@
 package cophy;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import beast.core.CalculationNode;
@@ -29,9 +30,11 @@ import beast.core.Function;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.core.parameter.IntegerParameter;
+import beast.core.parameter.RealParameter;
 import beast.evolution.tree.Node;
 import beast.evolution.tree.TraitSet;
 import beast.evolution.tree.Tree;
+import beast.util.Randomizer;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
@@ -48,6 +51,9 @@ public class Reconciliation extends CalculationNode implements Function {
             Validate.REQUIRED);
     public Input<TraitSet> traitSetInput = new Input<TraitSet>("hostTrait",
             "The set of host traits for the embedded taxa.", Validate.REQUIRED);
+    public Input<RealParameter> originHeightParameterInput =
+            new Input<RealParameter>("originHeight", "The height of origin" +
+                    " for the embedded tree", Validate.REQUIRED);
         
     @Override
     public void initAndValidate() throws Exception {
@@ -57,9 +63,10 @@ public class Reconciliation extends CalculationNode implements Function {
         Tree embeddedTree = embeddedTreeInput.get();
         map.setDimension(embeddedTree.getNodeCount());
         Tree hostTree = hostTreeInput.get();
-        map.setLower(0);
-        map.setUpper(hostTree.getNodeCount() - 1);
+        map.setBounds(0, hostTree.getNodeCount() - 1);
         TraitSet hostTraitSet = traitSetInput.get();
+        
+        RealParameter originHeightParameter = originHeightParameterInput.get();
         
         Map<String,Node> hostTaxon2Node = new HashMap<String,Node>();
         for (int i = 0; i < hostTree.getNodeCount(); ++i) {
@@ -73,6 +80,18 @@ public class Reconciliation extends CalculationNode implements Function {
             Node hostNode = hostTaxon2Node.get(hostTaxon);
             setHost(embeddedNode, hostNode);
         }
+        
+        for (Node embeddedNode : embeddedTree.getInternalNodes()) {
+            List<Node> potentialHosts = Utils.getLineagesAtHeight(hostTree,
+                    embeddedNode.getHeight());
+            int r = Randomizer.nextInt(potentialHosts.size());
+            setHost(embeddedNode, potentialHosts.get(r));
+        }
+        
+        originHeightParameter.setBounds(0.0, Double.POSITIVE_INFINITY);
+        double embeddedRootHeight = embeddedTree.getRoot().getHeight();
+        originHeightParameter.setValue(Randomizer.nextDouble()
+                * embeddedRootHeight + embeddedRootHeight);
         
     }
     
