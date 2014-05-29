@@ -22,7 +22,6 @@
 package cophy;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import beast.evolution.tree.Node;
@@ -115,7 +114,7 @@ public final class Utils {
     public static final int sum(int[] values) {
         
         int sum = 0;
-        for (int i = 0; i < values.length; ++i) sum += values[i];
+        for (int v : values) sum += v;
         return sum;
         
     }
