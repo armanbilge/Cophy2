@@ -71,6 +71,27 @@ public final class Utils {
         
     }
     
+    public static final List<Node> getLineagesAtHeight(Tree tree,
+            double height) {
+        
+        List<Node> lineages = new ArrayList<Node>();
+        getLineagesAtHeight(tree.getRoot(), height, lineages);
+        return lineages;
+        
+    }
+    
+    private static final void getLineagesAtHeight(Node node, double height,
+            List<Node> lineages) {
+        
+        if (node.getHeight() > height) return;
+        
+        if (node.isRoot() || node.getParent().getHeight() > height)
+            lineages.add(node);
+                
+        getLineagesAtHeight(node.getLeft(), height, lineages);
+        getLineagesAtHeight(node.getRight(), height, lineages);
+    }
+    
     public static enum Relationship {
         SELF,
         DESCENDANT,
