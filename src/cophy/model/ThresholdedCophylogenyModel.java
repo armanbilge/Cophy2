@@ -88,49 +88,56 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         
     }
     
-    protected double calculateDensity(double startHeight, int startState,
+    protected double calculateDensity(double originHeight, int startState,
             Node embedded, TreeMap<Double,Node> hostSpeciations,
             DoubleMatrix2D[] matrices) {
+        
+        double L = 1.0;
         
         Tree hostTree = hostTreeInput.get();
         Reconciliation reconciliation = reconciliationInput.get();
         
         BranchRateModel branchRateModel = branchRateModelInput.get();
+        double rate = branchRateModel.getRateForBranch(embedded);
+        
+        double embeddedHeight = embedded.getHeight();
         
         Node host = reconciliation.getHost(embedded);
-        if (!Utils.lineageExistedAtHeight(host, embedded.getHeight()))
+        if (!Utils.lineageExistedAtHeight(host, embeddedHeight))
             return Double.NEGATIVE_INFINITY;
+        
+        double startHeight = originHeight;
         
         Map<Node,Integer> hostNodes2Bins = new HashMap<Node,Integer>();
         List<Node> startHostLineages = Utils.getLineagesAtHeight(hostTree,
-                startHeight);
+                startHeight, true);
         int hostCount = startHostLineages.size();
         for (int i = 0; i < hostCount; ++i)
             hostNodes2Bins.put(startHostLineages.get(i), i);
         
         NavigableSet<Double> hostSpeciationSet = hostSpeciations.subMap(
-                embedded.getHeight(), true, startHeight, false)
-                .descendingKeySet();
+                embeddedHeight, true, startHeight, false).descendingKeySet();
         
         DoubleMatrix1D startDensity =
                 DoubleFactory1D.dense.make(getStateCount(hostCount));
         startDensity.setQuick(startState, 1.0);
         
         int speciatedBin;
+        DoubleMatrix1D endDensity = DoubleFactory1D.sparse.make(hostCount);
         
         for (double speciationHeight : hostSpeciationSet) {
             
             DoubleMatrix2D matrix = matrices[hostCount-1];
             double t = (startHeight - speciationHeight)
-                    * branchRateModel.getRateForBranch(embedded);
-            DoubleMatrix1D endDensity = AMH11.expmv(t, matrix, startDensity);
+                    * rate;
+            endDensity = AMH11.expmv(t, matrix, startDensity);
             startHeight = speciationHeight;
             speciatedBin = hostNodes2Bins.get(
                     hostSpeciations.get(speciationHeight));
             hostNodes2Bins.clear();
             ++hostCount;
             startHostLineages =
-                    Utils.getLineagesAtHeight(hostTree, startHeight);
+                    Utils.getLineagesAtHeight(hostTree, startHeight, true);
             for (int i = 0; i < hostCount; ++i)
                 hostNodes2Bins.put(startHostLineages.get(i), i);
             int[] map = mapNewStatesToOld(hostCount, speciatedBin);
@@ -142,13 +149,121 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
         }
         
-        if (MachineAccuracy.same(embedded.getHeight(), host.getHeight())) {
-            // TODO
-        } else {
-            // TODO
-        }
+        Node embeddedLeft = embedded.getLeft();
+        Node embeddedRight = embedded.getRight();
+        int[] state = new int[hostCount];
         
-        return 0.0;
+        if (MachineAccuracy.same(embeddedHeight, 0.0)) {
+            
+            int hostBin = hostNodes2Bins.get(host);
+            state[hostBin] = 1;
+            return endDensity.getQuick(compressState(state));
+            
+        } else if (MachineAccuracy.same(embeddedHeight, host.getHeight())) {
+
+            int hostBin = hostNodes2Bins.get(host.getLeft());
+            state[hostBin] = 1;
+            double p1 = calculateDensity(embeddedHeight, compressState(state),
+                    embeddedLeft, hostSpeciations, matrices);
+            double p2 = calculateDensity(embeddedHeight, compressState(state),
+                    embeddedRight, hostSpeciations, matrices);
+            state[hostBin] = 0;
+
+            hostBin = hostNodes2Bins.get(host.getRight());
+            state[hostBin] = 1;
+            p1 *= calculateDensity(embeddedHeight, compressState(state),
+                    embeddedRight, hostSpeciations, matrices);
+            p2 *= calculateDensity(embeddedHeight, compressState(state),
+                    embeddedLeft, hostSpeciations, matrices); 
+            state[hostBin] = 0;
+            
+            L *= p1 + p2;
+            
+            int[] map = mapStatesToOneLess(hostCount-1, hostBin);
+            int[] map1 = mapNewStatesToOld(hostCount, hostBin);
+            
+            startDensity = DoubleFactory1D.dense.make(hostCount);
+            for (int i = 0; i < hostCount; ++i) {
+                double density = map1[i] != -1 && map[map1[i]] != -1 ?
+                        endDensity.getQuick(map[map1[i]]) : 0;
+                startDensity.setQuick(i, density);
+            }
+            
+            L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
+                    rate, matrices);
+            
+            
+        } else {
+            
+            --hostCount;
+            double lambda = duplicationRateParameterInput.get().getValue();
+            double tau = hostSwitchRateParameterInput.get().getValue();
+            double pDuplication = lambda / (lambda + tau);
+            L *= bdSpeciationDensity(embeddedHeight, originHeight);
+            int hostBin = hostNodes2Bins.get(host);
+                        
+            Node integrated = embeddedLeft;
+            state[hostBin] = 1;
+            double sum1 = pDuplication * calculateDensity(embeddedHeight,
+                    compressState(state), integrated, hostSpeciations,
+                    matrices);
+            state[hostBin] = 0;
+            double sum2 = 0.0;
+            for (int i = 0; i < hostCount; ++i) {
+                if (i != hostBin) {
+                    state[i] = 1;
+                    sum2 += calculateDensity(embeddedHeight,
+                            compressState(state), integrated, hostSpeciations,
+                            matrices);
+                    state[i] = 0;
+                }
+            }
+            sum1 += (1 - pDuplication) * sum2 / (hostCount - 1);
+            
+            state[hostBin] = 1;
+            double sum = sum1 * calculateDensity(embeddedHeight,
+                    compressState(state), embeddedRight, hostSpeciations,
+                    matrices);
+            state[hostBin] = 0;
+
+            integrated = embeddedRight;
+            state[hostBin] = 1;
+            sum1 = pDuplication * calculateDensity(embeddedHeight,
+                    compressState(state), integrated, hostSpeciations,
+                    matrices);
+            state[hostBin] = 0;
+            sum2 = 0.0;
+            for (int i = 0; i < hostCount; ++i) {
+                if (i != hostBin) {
+                    state[i] = 1;
+                    sum2 += calculateDensity(embeddedHeight,
+                            compressState(state), integrated, hostSpeciations,
+                            matrices);
+                    state[i] = 0;
+                }
+            }
+            sum1 += (1 - pDuplication) * sum2 / (hostCount - 1);
+
+            state[hostBin] = 1;
+            sum += sum1 * calculateDensity(embeddedHeight, compressState(state),
+                    embeddedLeft, hostSpeciations, matrices);
+            state[hostBin] = 0;
+                        
+            L *= sum;
+            
+            int[] map = mapStatesToOneLess(hostCount, hostBin);
+            startDensity = DoubleFactory1D.dense.make(hostCount);
+            for (int i = 0; i < hostCount; ++i) {
+                double density = map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
+                startDensity.setQuick(i, density);
+            }
+            
+            L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
+                    rate, matrices);
+            
+        }
+                
+        return L;
         
     }
     
@@ -169,12 +284,13 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 true, startHeight, false).descendingKeySet();
                 
         int speciatedBin;
+        DoubleMatrix1D endDensity = DoubleFactory1D.sparse.make(hostCount);
         
         for (double speciationHeight : hostSpeciationSet) {
             
             DoubleMatrix2D matrix = matrices[hostCount-1];
             double t = (startHeight - speciationHeight) * rate;
-            DoubleMatrix1D endDensity = AMH11.expmv(t, matrix, startDensity);
+            endDensity = AMH11.expmv(t, matrix, startDensity);
             startHeight = speciationHeight;
             speciatedBin = hostNodes2Bins.get(
                     hostSpeciations.get(speciationHeight));
@@ -193,7 +309,22 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
         }
         
-        return Math.log(startDensity.get(0));
+        return endDensity.get(0);
+    }
+    
+    protected double bdSpeciationDensity(double s, double t) {
+        
+        double lambda = duplicationRateParameterInput.get().getValue()
+            + hostSwitchRateParameterInput.get().getValue();
+        double mu = lossRateParameterInput.get().getValue();
+        
+        double a = lambda - mu;
+        double b = Math.exp(-a * s);
+        double c = lambda - mu * b;
+        double d = Math.exp(-a * t);
+        
+        return a * a * b / (c * c) * (lambda - mu * d) / (1 - d);
+        
     }
     
     protected DoubleMatrix2D constructRateMatrix(int hostCount) {
@@ -203,9 +334,9 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         double mu = lossRateParameterInput.get().getValue();
         
         int stateCount = getStateCount(hostCount);
-        int[][] decomposedStates = new int[stateCount][];
+        int[][] decompressedStates = new int[stateCount][];
         for (int i = 0; i < stateCount; ++i)
-            decomposedStates[i] = decomposeState(i, hostCount);
+            decompressedStates[i] = decompressState(i, hostCount);
         
         DoubleMatrix2D matrix =
                 DoubleFactory2D.sparse.make(stateCount, stateCount);
@@ -214,7 +345,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             for (int j = 0; j < stateCount; ++j) {
                 
                 double rate = 0.0;
-                int[] state = decomposedStates[i];
+                int[] state = decompressedStates[i];
                 
                 if (i == j) {
                     if (i < stateCount - 1) rate += lambda + tau;
@@ -223,14 +354,14 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 } else {
                     
                     int eventLocus = locateBirthEvent(state,
-                            decomposedStates[j]);
+                            decompressedStates[j]);
                     if (eventLocus != -1) {
                         rate += state[eventLocus] * lambda;
                         rate += (Utils.sum(state) - state[eventLocus]) /
                                 (hostCount - 1) * tau;
                     }
                     
-                    eventLocus = locateBirthEvent(decomposedStates[j], state);
+                    eventLocus = locateBirthEvent(decompressedStates[j], state);
                     if (eventLocus != -1)
                         rate += state[eventLocus] * mu;
                     
@@ -248,27 +379,27 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         return MathUtils.pow(threshold + 1, hostCount);
     }
     
-    protected final int composeState(int[] decomposedState) {
+    protected final int compressState(int[] decompressedState) {
         
         int base = threshold + 1;
         int state = 0;
-        for (int i = 0, j = 1; i < decomposedState.length; ++i, j *= base)
-            state += decomposedState[i] * j;
+        for (int i = 0, j = 1; i < decompressedState.length; ++i, j *= base)
+            state += decompressedState[i] * j;
         return state;
         
     }
     
-    protected final int[] decomposeState(int state, int hostCount) {
-        int[] decomposedState = new int[hostCount];
-        decomposeState(state, decomposedState);
-        return decomposedState;
+    protected final int[] decompressState(int state, int hostCount) {
+        int[] decompressedState = new int[hostCount];
+        decompressState(state, decompressedState);
+        return decompressedState;
     }
     
-    protected final void decomposeState(int state, int[] decomposedState) {
+    protected final void decompressState(int state, int[] decompressedState) {
         
         int base = threshold + 1;
-        for (int i = 0; i < decomposedState.length; ++i) {
-            decomposedState[i] = state % base;
+        for (int i = 0; i < decompressedState.length; ++i) {
+            decompressedState[i] = state % base;
             state /= base;
         }
         
@@ -299,28 +430,29 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
     
     protected final boolean statesAreCompatible(int s0, int s1, int hostCount) {
         
-        int[] s0Decomposed = decomposeState(s0, hostCount);
-        int[] s1Decomposed = decomposeState(s1, hostCount);
+        int[] s0Decompressed = decompressState(s0, hostCount);
+        int[] s1Decompressed = decompressState(s1, hostCount);
         for (int i = 0; i < hostCount; ++i) {
-            if (s0Decomposed[1] < s1Decomposed[0]) return false;
+            if (s0Decompressed[1] < s1Decompressed[0]) return false;
         }
         return true;
+        
     }
 
     protected final int[] mapNewStatesToOld(int hostCount, int speciatedBin) {
         
         int newStateCount = getStateCount(hostCount);
-        int[] decomposedState = new int[hostCount];
+        int[] decompressedState = new int[hostCount];
         int[] map = new int[getStateCount(hostCount)];
         int[] oldState = new int[hostCount-1];
         for (int state = 0; state < newStateCount; ++state) {
             boolean valid = true;
-            decomposeState(state, decomposedState);
+            decompressState(state, decompressedState);
             for (int i = 0; i < hostCount; ++i) {
                 int j = i > speciatedBin ? i : i-1;
-                oldState[j] = decomposedState[i];
+                oldState[j] = decompressedState[i];
                 if (i == speciatedBin) {
-                    if (decomposedState[i] != decomposedState[i+1]) {
+                    if (decompressedState[i] != decompressedState[i+1]) {
                         valid = false;
                         break;
                     }
@@ -328,12 +460,29 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 }
             }
             if (valid)
-                map[state] = composeState(oldState);
+                map[state] = compressState(oldState);
             else
                 map[state] = -1;
         }
+        return map;
         
-        return null;
+    }
+    
+    protected final int[] mapStatesToOneLess(int hostCount, int speciatedBin) {
+        
+        int newStateCount = getStateCount(hostCount);
+        int[] decompressedState = new int[hostCount];
+        int[] map = new int[getStateCount(hostCount)];
+        for (int state = 0; state < newStateCount; ++state) {
+            decompressState(state, decompressedState);
+            if (decompressedState[speciatedBin] < 1) {
+                map[state] = -1;
+            } else {
+                decompressedState[speciatedBin] -= 1;
+                map[state] = compressState(decompressedState);
+            }
+        }
+        return map;
         
     }
     

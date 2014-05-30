@@ -73,9 +73,18 @@ public final class Utils {
     
     public static final List<Node> getLineagesAtHeight(Tree tree,
             double height) {
+        return getLineagesAtHeight(tree, height, false);
+    }
+    
+    public static final List<Node> getLineagesAtHeight(Tree tree, double height,
+            boolean approachFromPresent) {
         
         List<Node> lineages = new ArrayList<Node>();
-        getLineagesAtHeight(tree.getRoot(), height, lineages);
+        if (approachFromPresent)
+            getLineagesAtHeightApproachingFromPresent(tree.getRoot(),
+                    height, lineages);
+        else
+            getLineagesAtHeight(tree.getRoot(), height, lineages);
         return lineages;
         
     }
@@ -88,6 +97,56 @@ public final class Utils {
         } else {
             getLineagesAtHeight(node.getLeft(), height, lineages);
             getLineagesAtHeight(node.getRight(), height, lineages);
+        }
+        
+    }
+
+    private static final void getLineagesAtHeightApproachingFromPresent(
+            Node node, double height, List<Node> lineages) {
+                
+        if (node.getHeight() < height &&
+                (node.isRoot() || node.getParent().getHeight() > height)) {
+            lineages.add(node);
+        } else {
+            getLineagesAtHeightApproachingFromPresent(node.getLeft(), height,
+                    lineages);
+            getLineagesAtHeightApproachingFromPresent(node.getRight(), height,
+                    lineages);
+        }
+        
+    }
+
+    public static final int getLineageCountAtHeight(Tree tree,
+            double height, boolean approachFromPresent) {
+        
+        if (approachFromPresent)
+            return getLineageCountAtHeightApproachingFromPresent(tree.getRoot(),
+                    height);
+        else
+            return getLineageCountAtHeight(tree.getRoot(), height);
+        
+    }
+    
+    private static final int getLineageCountAtHeight(Node node, double height) {
+                
+        if (lineageExistedAtHeight(node, height)) {
+            return 1;
+        } else {
+            return getLineageCountAtHeight(node.getLeft(), height)
+                + getLineageCountAtHeight(node.getRight(), height);
+        }
+        
+    }
+
+    private static final int getLineageCountAtHeightApproachingFromPresent(
+            Node node, double height) {
+                
+        if (node.getHeight() < height &&
+                (node.isRoot() || node.getParent().getHeight() > height)) {
+            return 1;
+        } else {
+            return getLineageCountAtHeight(node.getLeft(), height)
+                + getLineageCountAtHeight(node.getRight(), height);
         }
         
     }
