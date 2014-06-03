@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<beast namespace="beast.core.util
+                  :beast.evolution.alignment
+                  :beast.evolution.operators
+                  :beast.util
+                  :cophy
+                  :cophy.operator"
+       version="2.0">
+
+    <taxonSet id="hostTaxa">
+        <taxon id="host1"/>
+        <taxon id="host2"/>
+    </taxonSet> 
+
+    <treeParser id="hostTree"
+                isLabelledNewick="true"
+                taxa="hostTaxa"
+                newick="(host1:1.0,host2:1.0);"/>
+
+    <taxonSet id="embeddedTaxa">
+        <taxon id="embedded1"/>
+        <taxon id="embedded2"/>
+        <taxon id="embedded3"/>
+        <taxon id="embedded4"/>
+    </taxonSet>
+
+    <distribution id="posterior"
+                  ignore="false"
+                  spec="util.CompoundDistribution"
+                  useThreads="false">
+    
+        <distribution id="prior"
+                      ignore="false"
+                      spec="util.CompoundDistribution"
+                      useThreads="false">
+
+            <distribution id="cophylogeny"
+                          spec="cophy.model.ThresholdedCophylogenyModel"
+                          threshold="4">
+                <reconciliation id="reconciliation"
+                                embeddedTree="@embeddedTree"
+                                hostTree="@hostTree"
+                                spec="Reconciliation">
+                    <parameter id="map"
+                               name="map"
+                               spec="IntegerParameter"/>
+                    <trait spec="beast.evolution.tree.TraitSet"
+                           value="embedded1 = host1,
+                                  embedded2 = host2,
+                                  embedded3 = host1,
+                                  embedded4 = host2"
+                           taxa="@embeddedTaxa"/>
+                </reconciliation>
+                <parameter name="duplicationRate" value="1.0"/>
+                <parameter name="hostSwitchRate" value="1.0"/>
+                <parameter name="lossRate" value="1.0"/>
+                <parameter name="originHeight" value="2.0"/>
+                <branchRateModel spec="beast.evolution.branchratemodel
+                        .StrictClockModel"/>
+                    <parameter name="clock.rate" estimate="false" value="1.0"/>
+                </branchRateModel>
+            </distribution>
+
+        </distribution>
+    
+    </distribution>
+
+    <run id="mcmc"
+         chainLength="1000000"
+         preBurnin="0"
+         sampleFromPrior="False"> 
+
+        <state id="state">
+            <tree id="embeddedTree" estimate="true" name="stateNode"/>
+            <parameter idref="map"/>
+        </state>
+
+        <distribution idref="posterior"/>
+
+        <operator spec="ScaleOperator"
+                  scaleFactor="0.5"
+                  weight="1"
+                  tree="@embeddedTree"/>
+        <operator spec="Uniform" weight="10" tree="@embeddedTree"/>
+        <operator spec="SubtreeSlide"
+                  weight="5"
+                  gaussian="true"
+                  size="1.0"
+                  tree="@embeddedTree"/>
+        <operator spec="Exchange"
+                  isNarrow="true"
+                  weight="1"
+                  tree="@embeddedTree"/>
+        <operator spec="Exchange"
+                  isNarrow="false"
+                  weight="1"
+                  tree="@embeddedTree"/>
+        <operator spec="WilsonBalding" weight="1" tree="@embeddedTree"/>
+        <operator spec="HostSwitchOperator"
+                  embeddedTree="@embeddedTree"
+                  hostTree="@hostTree"
+                  reconciliation="@reconciliation"
+                  originHeight="originHeight"/>
+        <operator spec="LeafHostSwitchOperator"
+                  embeddedTree="@embeddedTree"
+                  hostTree="@hostTree"
+                  reconciliation="@reconciliation"
+                  originHeight="originHeight"/>
+        <operator spec="CospeciationOperator"
+                  embeddedTree="@embeddedTree"
+                  reconciliation="@reconciliation"
+                  originHeight="@originHeight"/>
+        
+        <logger logEvery="10000">
+            <log idref="prior"/>
+        </logger>
+        <logger logEvery="100" fileName="cophy.$(seed).log"/>
+            <log spec="beast.evolution.tree.TreeWithMetaDataLogger"
+                 tree="@embeddedTree">
+                <reconciliation idref="reconciliation"/>
+            </log>
+        </logger>
+    </run>
+
+</beast>
