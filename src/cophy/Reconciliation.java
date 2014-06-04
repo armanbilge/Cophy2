@@ -58,7 +58,6 @@ public class Reconciliation extends CalculationNode implements Function {
     @Override
     public void initAndValidate() throws Exception {
         
-        super.initAndValidate();
         IntegerParameter map = mapInput.get();
         Tree embeddedTree = embeddedTreeInput.get();
         map.setDimension(embeddedTree.getNodeCount());
@@ -69,8 +68,7 @@ public class Reconciliation extends CalculationNode implements Function {
         RealParameter originHeightParameter = originHeightParameterInput.get();
         
         Map<String,Node> hostTaxon2Node = new HashMap<String,Node>();
-        for (int i = 0; i < hostTree.getNodeCount(); ++i) {
-            Node node = hostTree.getNode(i);
+        for (Node node : hostTree.getExternalNodes()) {
             hostTaxon2Node.put(hostTree.getTaxonId(node), node);
         }        
         
