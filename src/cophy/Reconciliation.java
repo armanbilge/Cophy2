@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import beast.core.CalculationNode;
 import beast.core.Function;
 import beast.core.Input;
 import beast.core.Input.Validate;
@@ -40,15 +39,12 @@ import beast.util.Randomizer;
  * @author Arman D. Bilge <armanbilge@gmail.com>
  *
  */
-public class Reconciliation extends CalculationNode implements Function {
+public class Reconciliation extends IntegerParameter implements Function {
 
     public Input<Tree> embeddedTreeInput = new Input<Tree>("embeddedTree", 
             "The embedded, or contained, tree.", Validate.REQUIRED);
     public Input<Tree> hostTreeInput = new Input<Tree>("hostTree",
             "The tree hosting the embedded tree.", Validate.REQUIRED);
-    public Input<IntegerParameter> mapInput = new Input<IntegerParameter>(
-            "map", "An integer parameter mapping embedded nodes to host nodes",
-            Validate.REQUIRED);
     public Input<TraitSet> traitSetInput = new Input<TraitSet>("hostTrait",
             "The set of host traits for the embedded taxa.", Validate.REQUIRED);
     public Input<RealParameter> originHeightParameterInput =
@@ -58,11 +54,11 @@ public class Reconciliation extends CalculationNode implements Function {
     @Override
     public void initAndValidate() throws Exception {
         
-        IntegerParameter map = mapInput.get();
+        super.initAndValidate();
         Tree embeddedTree = embeddedTreeInput.get();
-        map.setDimension(embeddedTree.getNodeCount());
+        setDimension(embeddedTree.getNodeCount());
         Tree hostTree = hostTreeInput.get();
-        map.setBounds(0, hostTree.getNodeCount() - 1);
+        setBounds(0, hostTree.getNodeCount() - 1);
         TraitSet hostTraitSet = traitSetInput.get();
         
         RealParameter originHeightParameter = originHeightParameterInput.get();
@@ -94,27 +90,12 @@ public class Reconciliation extends CalculationNode implements Function {
     }
     
     public Node getHost(Node embeddedNode) {
-        int hostNodeNr = mapInput.get().getNativeValue(embeddedNode.getNr());
+        int hostNodeNr = getNativeValue(embeddedNode.getNr());
         return hostTreeInput.get().getNode(hostNodeNr);
     }
     
     public void setHost(Node embeddedNode, Node hostNode) {
-        mapInput.get().setValue(embeddedNode.getNr(), hostNode.getNr());
+        setValue(embeddedNode.getNr(), hostNode.getNr());
     }
 
-    @Override
-    public int getDimension() {
-        return mapInput.get().getDimension();
-    }
-
-    @Override
-    public double getArrayValue() {
-        return mapInput.get().getArrayValue();
-    }
-
-    @Override
-    public double getArrayValue(int iDim) {
-        return mapInput.get().getArrayValue(iDim);
-    }
-    
 }
