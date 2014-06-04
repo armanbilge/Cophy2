@@ -68,6 +68,7 @@ public class HostSwitchOperator extends Operator {
                 embeddedNode.getRight().getHeight());
         double upper = embeddedNode.isRoot() ? originHeight :
                     embeddedNode.getParent().getHeight();
+        if (upper < lower) return Double.NEGATIVE_INFINITY;
         List<Node> potentialNewHosts =
                 Utils.getLineagesInHeightRange(hostTree, lower, upper);
         Node proposedHostNode = potentialNewHosts.get(

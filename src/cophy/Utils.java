@@ -44,6 +44,7 @@ public final class Utils {
         List<Node> lineages = new ArrayList<Node>(tree.getLeafNodeCount());
         getLineagesInHeightRange(tree.getRoot(), lower, upper,
                 lineages);
+
         return lineages;
         
     }
@@ -51,9 +52,8 @@ public final class Utils {
     private static final void getLineagesInHeightRange(Node node,
             double lower, double upper, List<Node> lineages) {
         
-        double nodeHeight = node.getHeight();
-        if (nodeHeight >= lower) {
-            if (nodeHeight < upper) lineages.add(node);
+        if (node.isRoot() || node.getParent().getHeight() >= lower) {
+            if (node.getHeight() < upper) lineages.add(node);
         } else {
             return;
         }
