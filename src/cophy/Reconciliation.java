@@ -72,20 +72,17 @@ public class Reconciliation extends IntegerParameter implements Function {
             String hostTaxon =
                     hostTraitSet.getStringValue(embeddedNode.getNr());
             Node hostNode = hostTaxon2Node.get(hostTaxon);
-            setHost(embeddedNode, hostNode);
+            setHostInit(embeddedNode, hostNode);
         }
         
         for (Node embeddedNode : embeddedTree.getInternalNodes()) {
             List<Node> potentialHosts = Utils.getLineagesAtHeight(hostTree,
                     embeddedNode.getHeight());
             int r = Randomizer.nextInt(potentialHosts.size());
-            setHost(embeddedNode, potentialHosts.get(r));
+            setHostInit(embeddedNode, potentialHosts.get(r));
         }
         
         originHeightParameter.setBounds(0.0, Double.POSITIVE_INFINITY);
-        double embeddedRootHeight = embeddedTree.getRoot().getHeight();
-        originHeightParameter.setValue(Randomizer.nextDouble()
-                * embeddedRootHeight + embeddedRootHeight);
         
     }
     
@@ -98,4 +95,14 @@ public class Reconciliation extends IntegerParameter implements Function {
         setValue(embeddedNode.getNr(), hostNode.getNr());
     }
 
+    private void setHostInit(Node embeddedNode, Node hostNode) {
+        
+        int iParam = embeddedNode.getNr();
+        int fValue = hostNode.getNr();
+        values[iParam] = fValue;
+        m_bIsDirty[iParam] = true;
+        m_nLastDirty = iParam;
+        
+    }
+        
 }
