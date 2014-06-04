@@ -62,6 +62,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         
     }
 
+    @Override
     protected double calculateDensity() {
         
         Tree embeddedTree = embeddedTreeInput.get();

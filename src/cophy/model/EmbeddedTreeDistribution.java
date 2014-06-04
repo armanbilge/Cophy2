@@ -98,10 +98,20 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
         
     }
 
+    protected double logP;
+    protected double storedLogP;
+    
+    @Override
+    public double calculateLogP() throws Exception {
+        if (isDirtyCalculation()) logP = calculateDensity();
+        return logP;
+    }
+    
+    protected abstract double calculateDensity();
+    
     @Override
     public void sample(State state, Random random) {
-        // TODO Auto-generated method stub
-
+        throw new RuntimeException("Not implemented yet!");
     }
 
     protected abstract double getOverallRate(Node embedded, Node host);
