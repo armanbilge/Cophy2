@@ -107,7 +107,7 @@ public final class Utils {
         if (node.getHeight() < height &&
                 (node.isRoot() || node.getParent().getHeight() > height)) {
             lineages.add(node);
-        } else {
+        } else if (!node.isLeaf()) {
             getLineagesAtHeightApproachingFromPresent(node.getLeft(), height,
                     lineages);
             getLineagesAtHeightApproachingFromPresent(node.getRight(), height,

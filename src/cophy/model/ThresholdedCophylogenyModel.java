@@ -137,15 +137,19 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                     hostSpeciations.get(speciationHeight));
             hostNodes2Bins.clear();
             ++hostCount;
-            startHostLineages =
-                    Utils.getLineagesAtHeight(hostTree, startHeight, true);
-            for (int i = 0; i < hostCount; ++i)
-                hostNodes2Bins.put(startHostLineages.get(i), i);
-            int[] map = mapNewStatesToOld(hostCount, speciatedBin);
-            startDensity = DoubleFactory1D.dense.make(getStateCount(hostCount));
-            for (int i = 0; i < map.length; ++i) {
-                double density = map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
-                startDensity.setQuick(i, density);
+            if (hostCount <= hostTree.getLeafNodeCount()) {
+                startHostLineages = Utils.getLineagesAtHeight(hostTree,
+                        startHeight, true);
+                for (int i = 0; i < hostCount; ++i)
+                    hostNodes2Bins.put(startHostLineages.get(i), i);
+                int[] map = mapNewStatesToOld(hostCount, speciatedBin);
+                startDensity = DoubleFactory1D.dense
+                        .make(getStateCount(hostCount));
+                for (int i = 0; i < map.length; ++i) {
+                    double density =
+                            map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
+                    startDensity.setQuick(i, density);
+                }
             }
             
         }
@@ -358,8 +362,9 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                             decompressedStates[j]);
                     if (eventLocus != -1) {
                         rate += state[eventLocus] * lambda;
-                        rate += (Utils.sum(state) - state[eventLocus]) /
-                                (hostCount - 1) * tau;
+                        if (hostCount > 1)
+                            rate += (Utils.sum(state) - state[eventLocus]) /
+                                    (hostCount - 1) * tau;
                     }
                     
                     eventLocus = locateBirthEvent(decompressedStates[j], state);
