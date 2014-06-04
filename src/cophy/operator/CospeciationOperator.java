@@ -47,8 +47,8 @@ public class CospeciationOperator extends Operator {
                     + " specifying the origin of the embedded process",
                     Input.Validate.REQUIRED);
     
-    public CospeciationOperator() {}
-
+    public void initAndValidate() {}
+    
     @Override
     public double proposal() {
         

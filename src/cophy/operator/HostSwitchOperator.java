@@ -51,9 +51,7 @@ public class HostSwitchOperator extends Operator {
             new Input<RealParameter>("originHeight", "Parameter"
                     + " specifying the origin of the embedded process",
                     Input.Validate.REQUIRED);
-        
-    public HostSwitchOperator() {}
-    
+            
     public void initAndValidate() {}
 
     @Override

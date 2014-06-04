@@ -33,6 +33,8 @@ import cophy.Reconciliation;
  */
 public class LeafHostSwitchOperator extends HostSwitchOperator {
 
+    public void initAndValidate() {}
+    
     @Override
     public double proposal() {
 
