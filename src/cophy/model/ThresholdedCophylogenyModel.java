@@ -63,7 +63,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
     }
 
     @Override
-    protected double calculateDensity() {
+    protected double calculateLogDensity() {
         
         Tree embeddedTree = embeddedTreeInput.get();
         Tree hostTree = hostTreeInput.get();
@@ -73,7 +73,8 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 || originHeight < hostTree.getRoot().getHeight())
             return Double.NEGATIVE_INFINITY;
         
-        TreeMap<Double,Node> hostSpeciations = new TreeMap<Double,Node>();
+        TreeMap<Double,Node> hostSpeciations =
+                new TreeMap<Double,Node>(new Utils.RelaxedComparator());
         for (Node node : hostTree.getInternalNodes())
             hostSpeciations.put(node.getHeight(), node);
         
@@ -84,8 +85,10 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             matrices[i] = constructRateMatrix(i+1);
         }
         
-        return calculateDensity(originHeight, 1, embeddedTree.getRoot(),
-                hostSpeciations, matrices);
+        double density = calculateDensity(originHeight, 1,
+                embeddedTree.getRoot(), hostSpeciations, matrices);
+        assert(!Double.isNaN(Math.log(density)));
+        return Math.log(density);
         
     }
     
@@ -105,7 +108,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         
         Node host = reconciliation.getHost(embedded);
         if (!Utils.lineageExistedAtHeight(host, embeddedHeight))
-            return Double.NEGATIVE_INFINITY;
+            return 0;
         
         double startHeight = originHeight;
         
@@ -118,7 +121,8 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         
         NavigableSet<Double> hostSpeciationSet = hostSpeciations.subMap(
                 embeddedHeight, true, startHeight, false).descendingKeySet();
-        
+        if (hostSpeciationSet.size() > 0)
+            assert(!MachineAccuracy.same(startHeight, hostSpeciationSet.first()));
         DoubleMatrix1D startDensity =
                 DoubleFactory1D.dense.make(getStateCount(hostCount));
         startDensity.setQuick(startState, 1.0);
@@ -140,6 +144,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             if (hostCount <= hostTree.getLeafNodeCount()) {
                 startHostLineages = Utils.getLineagesAtHeight(hostTree,
                         startHeight, true);
+                assert(startHostLineages.size() == hostCount);
                 for (int i = 0; i < hostCount; ++i)
                     hostNodes2Bins.put(startHostLineages.get(i), i);
                 int[] map = mapNewStatesToOld(hostCount, speciatedBin);
@@ -157,11 +162,17 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         Node embeddedLeft = embedded.getLeft();
         Node embeddedRight = embedded.getRight();
         int[] state = new int[hostCount];
-        
-        if (MachineAccuracy.same(embeddedHeight, 0.0)) {
+
+        if (embedded.isLeaf()) {
             
             int hostBin = hostNodes2Bins.get(host);
+//            if (hostSpeciationSet.size() > 0)
+                state = new int[hostCount-1];
+            assert(hostBin < state.length);
             state[hostBin] = 1;
+            assert(compressState(state) < endDensity.size());
+            assert(!Double.isNaN(endDensity.getQuick(compressState(state)))
+                    && !Double.isInfinite(endDensity.getQuick(compressState(state))));
             return endDensity.getQuick(compressState(state));
             
         } else if (MachineAccuracy.same(embeddedHeight, host.getHeight())) {
@@ -196,11 +207,11 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
                     rate, matrices);
-            
-            
+            assert(!Double.isNaN(L) && !Double.isInfinite(L));
+
         } else {
             
-            --hostCount;
+            if (hostSpeciationSet.size() > 0) --hostCount;
             double lambda = duplicationRateParameterInput.get().getValue();
             double tau = hostSwitchRateParameterInput.get().getValue();
             double pDuplication = lambda / (lambda + tau);
@@ -223,7 +234,9 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                     state[i] = 0;
                 }
             }
-            sum1 += (1 - pDuplication) * sum2 / (hostCount - 1);
+            
+            if (hostCount > 1)
+                sum1 += (1 - pDuplication) * sum2 / (hostCount - 1);
             
             state[hostBin] = 1;
             double sum = sum1 * calculateDensity(embeddedHeight,
@@ -247,7 +260,9 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                     state[i] = 0;
                 }
             }
-            sum1 += (1 - pDuplication) * sum2 / (hostCount - 1);
+
+            if (hostCount > 1)
+                sum1 += (1 - pDuplication) * sum2 / (hostCount - 1);
 
             state[hostBin] = 1;
             sum += sum1 * calculateDensity(embeddedHeight, compressState(state),
@@ -257,17 +272,19 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             L *= sum;
             
             int[] map = mapStatesToOneLess(hostCount, hostBin);
-            startDensity = DoubleFactory1D.dense.make(hostCount);
-            for (int i = 0; i < hostCount; ++i) {
+            int stateCount = getStateCount(hostCount);
+            startDensity = DoubleFactory1D.dense.make(stateCount);
+            for (int i = 0; i < stateCount; ++i) {
                 double density = map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
                 startDensity.setQuick(i, density);
             }
             
             L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
                     rate, matrices);
-            
+            assert(!Double.isNaN(L) && !Double.isInfinite(L));
         }
-                
+        
+        assert(!Double.isNaN(L) && !Double.isInfinite(L));
         return L;
         
     }
@@ -295,6 +312,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             DoubleMatrix2D matrix = matrices[hostCount-1];
             double t = (startHeight - speciationHeight) * rate;
+            assert(matrix.rows() == matrix.columns() && matrix.columns() == startDensity.size());
             endDensity = AMH11.expmv(t, matrix, startDensity);
             startHeight = speciationHeight;
             speciatedBin = hostNodes2Bins.get(
@@ -302,7 +320,8 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             hostNodes2Bins.clear();
             ++hostCount;
             startHostLineages =
-                    Utils.getLineagesAtHeight(hostTree, startHeight);
+                    Utils.getLineagesAtHeight(hostTree, startHeight, true);
+            assert(hostCount == startHostLineages.size());
             for (int i = 0; i < hostCount; ++i)
                 hostNodes2Bins.put(startHostLineages.get(i), i);
             int[] map = mapNewStatesToOld(hostCount, speciatedBin);
@@ -314,7 +333,9 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
         }
         
-        return endDensity.get(0);
+        assert(!Double.isNaN(endDensity.getQuick(0)) &&
+                !Double.isInfinite(endDensity.getQuick(0)));
+        return endDensity.getQuick(0);
     }
     
     protected double bdSpeciationDensity(double s, double t) {
@@ -373,7 +394,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                     
                 }
                 
-                if (rate != 0.0) matrix.set(i, j, rate);
+                if (rate != 0.0) matrix.set(j, i, rate);
                 
             }
         }
@@ -455,7 +476,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             boolean valid = true;
             decompressState(state, decompressedState);
             for (int i = 0; i < hostCount; ++i) {
-                int j = i > speciatedBin ? i : i-1;
+                int j = i > speciatedBin ? i-1 : i;
                 oldState[j] = decompressedState[i];
                 if (i == speciatedBin) {
                     if (decompressedState[i] != decompressedState[i+1]) {
@@ -475,7 +496,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
     }
     
     protected final int[] mapStatesToOneLess(int hostCount, int speciatedBin) {
-        
+        assert(hostCount > 0);
         int newStateCount = getStateCount(hostCount);
         int[] decompressedState = new int[hostCount];
         int[] map = new int[getStateCount(hostCount)];

@@ -22,10 +22,12 @@
 package cophy;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
+import beast.math.MachineAccuracy;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
@@ -104,8 +106,7 @@ public final class Utils {
     private static final void getLineagesAtHeightApproachingFromPresent(
             Node node, double height, List<Node> lineages) {
                 
-        if (node.getHeight() < height &&
-                (node.isRoot() || node.getParent().getHeight() > height)) {
+        if (node.getHeight() < height) {
             lineages.add(node);
         } else if (!node.isLeaf()) {
             getLineagesAtHeightApproachingFromPresent(node.getLeft(), height,
@@ -198,5 +199,22 @@ public final class Utils {
         return sum;
         
     }
+    
+    /**
+     * Uses MachineAccuracy.same() to check equivalence. Note: this comparator
+     * imposes orderings that are inconsistent with equals.
+     */
+    public static final class RelaxedComparator implements Comparator<Double> {
+        @Override
+        public int compare(Double d1, Double d2) {
+            if (MachineAccuracy.same(d1, d2))
+                return 0;
+            else if (d1 > d2)
+                return 1;
+            else
+                return -1;
+        }
+    }
+
     
 }

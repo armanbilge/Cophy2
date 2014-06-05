@@ -103,11 +103,11 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
     
     @Override
     public double calculateLogP() throws Exception {
-        if (isDirtyCalculation()) logP = calculateDensity();
+        if (isDirtyCalculation()) logP = calculateLogDensity();
         return logP;
     }
     
-    protected abstract double calculateDensity();
+    protected abstract double calculateLogDensity();
     
     @Override
     public void sample(State state, Random random) {
