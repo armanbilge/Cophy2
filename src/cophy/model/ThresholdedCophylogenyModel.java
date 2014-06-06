@@ -22,6 +22,7 @@
 package cophy.model;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -73,13 +74,12 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 || originHeight < hostTree.getRoot().getHeight())
             return Double.NEGATIVE_INFINITY;
         
-        TreeMap<Double,Node> hostSpeciations =
-                new TreeMap<Double,Node>(new Utils.RelaxedComparator());
+        TreeMap<Double,Node> hostSpeciations = new TreeMap<Double,Node>();
         for (Node node : hostTree.getInternalNodes())
             hostSpeciations.put(node.getHeight(), node);
         
         DoubleMatrix2D[] matrices =
-                new DoubleMatrix2D[hostTree.getLeafNodeCount()-1];
+                new DoubleMatrix2D[hostTree.getLeafNodeCount()];
         
         for (int i = 0; i < matrices.length; ++i) {
             matrices[i] = constructRateMatrix(i+1);
@@ -108,7 +108,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         
         Node host = reconciliation.getHost(embedded);
         if (!Utils.lineageExistedAtHeight(host, embeddedHeight))
-            return 0;
+            return 0.0;
         
         double startHeight = originHeight;
         
@@ -128,36 +128,45 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         startDensity.setQuick(startState, 1.0);
         
         int speciatedBin;
-        DoubleMatrix1D endDensity = DoubleFactory1D.sparse.make(hostCount);
+        DoubleMatrix1D endDensity;
         
-        for (double speciationHeight : hostSpeciationSet) {
+        for (Iterator<Double> iter = hostSpeciationSet.iterator();
+                iter.hasNext();) {
             
+            double speciationHeight = iter.next();
             DoubleMatrix2D matrix = matrices[hostCount-1];
-            double t = (startHeight - speciationHeight)
-                    * rate;
+            double t = (startHeight - speciationHeight) * rate;
+            assert(matrix.columns() == startDensity.size());
             endDensity = AMH11.expmv(t, matrix, startDensity);
             startHeight = speciationHeight;
             speciatedBin = hostNodes2Bins.get(
                     hostSpeciations.get(speciationHeight));
             hostNodes2Bins.clear();
+            startHostLineages = Utils.getLineagesAtHeight(hostTree, startHeight,
+                    true);
+            for (int i = 0; i < hostCount; ++i)
+                hostNodes2Bins.put(startHostLineages.get(i), i);
             ++hostCount;
-            if (hostCount <= hostTree.getLeafNodeCount()) {
-                startHostLineages = Utils.getLineagesAtHeight(hostTree,
-                        startHeight, true);
-                assert(startHostLineages.size() == hostCount);
-                for (int i = 0; i < hostCount; ++i)
-                    hostNodes2Bins.put(startHostLineages.get(i), i);
-                int[] map = mapNewStatesToOld(hostCount, speciatedBin);
-                startDensity = DoubleFactory1D.dense
-                        .make(getStateCount(hostCount));
-                for (int i = 0; i < map.length; ++i) {
-                    double density =
-                            map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
-                    startDensity.setQuick(i, density);
-                }
+            assert(startHostLineages.size() == hostCount);
+            for (int i = 0; i < hostCount; ++i)
+                hostNodes2Bins.put(startHostLineages.get(i), i);
+            int[] map = mapNewStatesToOld(hostCount, speciatedBin);
+            startDensity = DoubleFactory1D.dense
+                    .make(getStateCount(hostCount));
+            for (int i = 0; i < map.length; ++i) {
+                double density =
+                        map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
+                        startDensity.setQuick(i, density);
             }
             
         }
+
+        assert(startHostLineages.size() == hostCount);
+
+        DoubleMatrix2D matrix = matrices[hostCount-1];
+        double t = (startHeight - embeddedHeight) * rate;
+        assert(matrix.columns() == startDensity.size());
+        endDensity = AMH11.expmv(t, matrix, startDensity);
         
         Node embeddedLeft = embedded.getLeft();
         Node embeddedRight = embedded.getRight();
@@ -167,10 +176,11 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             int hostBin = hostNodes2Bins.get(host);
 //            if (hostSpeciationSet.size() > 0)
-                state = new int[hostCount-1];
+//                state = new int[hostCount-1];
             assert(hostBin < state.length);
             state[hostBin] = 1;
             assert(compressState(state) < endDensity.size());
+//            assert(endDensity.getQuick(compressState(state)) > 0);
             assert(!Double.isNaN(endDensity.getQuick(compressState(state)))
                     && !Double.isInfinite(endDensity.getQuick(compressState(state))));
             return endDensity.getQuick(compressState(state));
@@ -195,8 +205,8 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             L *= p1 + p2;
             
-            int[] map = mapStatesToOneLess(hostCount-1, hostBin);
-            int[] map1 = mapNewStatesToOld(hostCount, hostBin);
+            int[] map = mapStatesToOneLess(hostCount, hostBin);
+            int[] map1 = mapNewStatesToOld(hostCount+1, hostBin);
             
             startDensity = DoubleFactory1D.dense.make(hostCount);
             for (int i = 0; i < hostCount; ++i) {
@@ -207,11 +217,11 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
                     rate, matrices);
+//            assert(L > 0);
             assert(!Double.isNaN(L) && !Double.isInfinite(L));
 
         } else {
             
-            if (hostSpeciationSet.size() > 0) --hostCount;
             double lambda = duplicationRateParameterInput.get().getValue();
             double tau = hostSwitchRateParameterInput.get().getValue();
             double pDuplication = lambda / (lambda + tau);
@@ -281,9 +291,11 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
                     rate, matrices);
+//            assert(L > 0);
             assert(!Double.isNaN(L) && !Double.isInfinite(L));
         }
         
+//        assert(L > 0);
         assert(!Double.isNaN(L) && !Double.isInfinite(L));
         return L;
         
@@ -308,31 +320,45 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         int speciatedBin;
         DoubleMatrix1D endDensity = DoubleFactory1D.sparse.make(hostCount);
         
-        for (double speciationHeight : hostSpeciationSet) {
+        for (Iterator<Double> iter = hostSpeciationSet.iterator();
+                iter.hasNext();) {
             
+            double speciationHeight = iter.next();
             DoubleMatrix2D matrix = matrices[hostCount-1];
             double t = (startHeight - speciationHeight) * rate;
-            assert(matrix.rows() == matrix.columns() && matrix.columns() == startDensity.size());
+            assert(matrix.columns() == startDensity.size());
             endDensity = AMH11.expmv(t, matrix, startDensity);
             startHeight = speciationHeight;
             speciatedBin = hostNodes2Bins.get(
                     hostSpeciations.get(speciationHeight));
             hostNodes2Bins.clear();
+            startHostLineages = Utils.getLineagesAtHeight(hostTree, startHeight,
+                    true);
+            for (int i = 0; i < hostCount; ++i)
+                hostNodes2Bins.put(startHostLineages.get(i), i);
             ++hostCount;
-            startHostLineages =
-                    Utils.getLineagesAtHeight(hostTree, startHeight, true);
-            assert(hostCount == startHostLineages.size());
+            assert(startHostLineages.size() == hostCount);
             for (int i = 0; i < hostCount; ++i)
                 hostNodes2Bins.put(startHostLineages.get(i), i);
             int[] map = mapNewStatesToOld(hostCount, speciatedBin);
-            startDensity = DoubleFactory1D.dense.make(getStateCount(hostCount));
+            startDensity = DoubleFactory1D.dense
+                    .make(getStateCount(hostCount));
             for (int i = 0; i < map.length; ++i) {
-                double density = map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
-                startDensity.setQuick(i, density);
+                double density =
+                        map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
+                        startDensity.setQuick(i, density);
             }
             
         }
+
+        assert(startHostLineages.size() == hostCount);
+
+        DoubleMatrix2D matrix = matrices[hostCount-1];
+        double t = startHeight * rate;
+        assert(matrix.columns() == startDensity.size());
+        endDensity = AMH11.expmv(t, matrix, startDensity);
         
+//        assert(endDensity.getQuick(0) > 0);
         assert(!Double.isNaN(endDensity.getQuick(0)) &&
                 !Double.isInfinite(endDensity.getQuick(0)));
         return endDensity.getQuick(0);

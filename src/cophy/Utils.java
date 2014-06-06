@@ -44,8 +44,7 @@ public final class Utils {
             throw new IllegalArgumentException("Must be lower <= upper");
         
         List<Node> lineages = new ArrayList<Node>(tree.getLeafNodeCount());
-        getLineagesInHeightRange(tree.getRoot(), lower, upper,
-                lineages);
+        getLineagesInHeightRange(tree.getRoot(), lower, upper, lineages);
 
         return lineages;
         
