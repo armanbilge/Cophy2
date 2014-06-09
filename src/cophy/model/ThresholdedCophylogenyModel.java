@@ -186,60 +186,42 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
         } else if (MachineAccuracy.same(embeddedHeight, host.getHeight())) {
 
-            int hostLeftBin = hostNodes2Bins.get(host.getLeft());
-            int hostRightBin = hostNodes2Bins.get(host.getRight());
-            double[] childLs = new double[threshold+1];
-            for (int i = 0; i <= threshold; ++i) {
-              state[hostLeftBin] = i;
-              int compressed = compressState(state);
-              double p1 = calculateDensity(embeddedHeight, compressed,
-                      embeddedLeft, hostSpeciations, matrices);
-              double p2 = calculateDensity(embeddedHeight, compressed,
-                      embeddedRight, hostSpeciations, matrices);
-              state[hostLeftBin] = 0;
-  
-              state[hostRightBin] = i;
-              compressed = compressState(state);
-              p1 *= calculateDensity(embeddedHeight, compressed,
-                      embeddedRight, hostSpeciations, matrices);
-              p2 *= calculateDensity(embeddedHeight, compressed,
-                      embeddedLeft, hostSpeciations, matrices); 
-              state[hostRightBin] = 0;
-              
-              childLs[i] = p1 + p2;
-            }
+            int hostBin = hostNodes2Bins.get(host.getLeft());
+            state[hostBin] = 1;
+            double p1 = calculateDensity(embeddedHeight, compressState(state),
+                    embeddedLeft, hostSpeciations, matrices);
+            double p2 = calculateDensity(embeddedHeight, compressState(state),
+                    embeddedRight, hostSpeciations, matrices);
+            state[hostBin] = 0;
+
+            hostBin = hostNodes2Bins.get(host.getRight());
+            state[hostBin] = 1;
+            p1 *= calculateDensity(embeddedHeight, compressState(state),
+                    embeddedRight, hostSpeciations, matrices);
+            p2 *= calculateDensity(embeddedHeight, compressState(state),
+                    embeddedLeft, hostSpeciations, matrices); 
+            state[hostBin] = 0;
             
-            int stateCount = getStateCount(hostCount - 1);
-            double[] extinctionLs = new double[stateCount];
-            int[] map = mapNewStatesToOld(hostCount, speciatedBin);
-            int pow = MathUtils.pow(hostCount+1, speciatedBin);
+            L *= p1 + p2;
+            
+            int[] map = mapStatesToNone(hostCount-1, speciatedBin);
+            int[] map1 = mapNewStatesToOld(hostCount, speciatedBin);
+            
+            int stateCount = getStateCount(hostCount);
+            startDensity =
+                    DoubleFactory1D.dense.make(stateCount);
             for (int i = 0; i < stateCount; ++i) {
-                int lower = i % pow;
-                int upper = i - lower;
-                int s = lower + upper * (threshold+1);
-                double d = calculateDensity(embeddedHeight, map[s],
-                        hostSpeciations, rate, matrices);
-                extinctionLs[i] = d;
+                double density = map1[i] != -1 && map[map1[i]] != -1 ?
+                        endDensity.getQuick(map[map1[i]]) : 0;
+                startDensity.setQuick(i, density);
             }
             
-            double sum = 0;
-            for (int i = 0; i < childLs.length; ++i) {
-                double sum2 = 0.0;
-                for (int j = 0; j < extinctionLs.length; ++j) {
-                    int lower = j % pow;
-                    int upper = j - lower;
-                    int s = lower + i * pow + upper * (threshold+1);
-                    sum2 += extinctionLs[j] * endDensity.getQuick(s);
-                }
-                sum2 *= childLs[i];
-                sum += sum2;
-            }
-            
-            L *= sum;
-            
+            L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
+                    rate, matrices);
+//            assert(L > 0);
+            assert(!Double.isNaN(L) && !Double.isInfinite(L));
+
         } else {
-            
-            // TODO fix flawed calculation
             
             double lambda = duplicationRateParameterInput.get().getValue();
             double tau = hostSwitchRateParameterInput.get().getValue();
@@ -319,18 +301,6 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
 //        assert(L > 0);
         assert(!Double.isNaN(L) && !Double.isInfinite(L));
         return L;
-        
-    }
-    
-    protected double calculateDensity(double startHeight,
-            int state, TreeMap<Double,Node> hostSpeciations,
-            double rate, DoubleMatrix2D[] matrices) {
-
-        Tree hostTree = hostTreeInput.get();
-        int count = Utils.getLineageCountAtHeight(hostTree, startHeight, true);
-        DoubleMatrix1D startDensity = DoubleFactory1D.dense.make(count);
-        return calculateDensity(startHeight, startDensity, hostSpeciations,
-                rate, matrices);
         
     }
     
@@ -550,23 +520,6 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         }
         return map;
         
-    }
-    
-    protected final int[] mapOldStatesToNew(int hostCount, int speciatedBin) {
-        
-        int oldStateCount = getStateCount(hostCount);
-        int[] map = new int[oldStateCount];
-        int[] decompressedState = new int[hostCount];
-        int[] newState = new int[hostCount+1];
-        for (int state = 0; state < oldStateCount; ++state) {
-            decompressState(state, decompressedState);
-            for (int i = 0, j = 0; i < hostCount; ++i, ++j) {
-                newState[j] = decompressedState[i];
-                if (i == speciatedBin) --i;
-            }
-            map[state] = compressState(newState);
-        }
-        return map;
     }
     
     protected final int[] mapStatesToOneLess(int hostCount, int speciatedBin) {
