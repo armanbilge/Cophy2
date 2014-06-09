@@ -22,7 +22,6 @@
 package cophy.model;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -127,13 +126,14 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 DoubleFactory1D.dense.make(getStateCount(hostCount));
         startDensity.setQuick(startState, 1.0);
         
-        int speciatedBin;
+        assert(hostNodes2Bins.containsKey(host) || hostSpeciationSet.size() > 0);
+        int speciatedBin = -1;
+        if (hostSpeciationSet.isEmpty())
+            speciatedBin = hostNodes2Bins.get(host);
         DoubleMatrix1D endDensity;
         
-        for (Iterator<Double> iter = hostSpeciationSet.iterator();
-                iter.hasNext();) {
+        for (double speciationHeight : hostSpeciationSet) {
             
-            double speciationHeight = iter.next();
             DoubleMatrix2D matrix = matrices[hostCount-1];
             double t = (startHeight - speciationHeight) * rate;
             assert(matrix.columns() == startDensity.size());
@@ -162,7 +162,6 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         }
 
         assert(startHostLineages.size() == hostCount);
-
         DoubleMatrix2D matrix = matrices[hostCount-1];
         double t = (startHeight - embeddedHeight) * rate;
         assert(matrix.columns() == startDensity.size());
@@ -205,11 +204,13 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             L *= p1 + p2;
             
-            int[] map = mapStatesToOneLess(hostCount, hostBin);
-            int[] map1 = mapNewStatesToOld(hostCount+1, hostBin);
+            int[] map = mapStatesToNone(hostCount-1, speciatedBin);
+            int[] map1 = mapNewStatesToOld(hostCount, speciatedBin);
             
-            startDensity = DoubleFactory1D.dense.make(hostCount);
-            for (int i = 0; i < hostCount; ++i) {
+            int stateCount = getStateCount(hostCount);
+            startDensity =
+                    DoubleFactory1D.dense.make(stateCount);
+            for (int i = 0; i < stateCount; ++i) {
                 double density = map1[i] != -1 && map[map1[i]] != -1 ?
                         endDensity.getQuick(map[map1[i]]) : 0;
                 startDensity.setQuick(i, density);
@@ -224,8 +225,10 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             double lambda = duplicationRateParameterInput.get().getValue();
             double tau = hostSwitchRateParameterInput.get().getValue();
-            double pDuplication = lambda / (lambda + tau);
-            L *= bdSpeciationDensity(embeddedHeight, originHeight);
+            double lambdaPtau = lambda + tau;
+            if (MachineAccuracy.same(lambdaPtau, 0.0)) return 0.0;
+            double pDuplication = lambda / lambdaPtau;
+//            L *= bdSpeciationDensity(embeddedHeight, originHeight);
             int hostBin = hostNodes2Bins.get(host);
                         
             Node integrated = embeddedLeft;
@@ -309,21 +312,19 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                         
         Map<Node,Integer> hostNodes2Bins = new HashMap<Node,Integer>();
         List<Node> startHostLineages = Utils.getLineagesAtHeight(hostTree,
-                startHeight);
+                startHeight, true);
         int hostCount = startHostLineages.size();
         for (int i = 0; i < hostCount; ++i)
             hostNodes2Bins.put(startHostLineages.get(i), i);
         
         NavigableSet<Double> hostSpeciationSet = hostSpeciations.subMap(0.0,
-                true, startHeight, false).descendingKeySet();
+                false, startHeight, false).descendingKeySet();
                 
         int speciatedBin;
         DoubleMatrix1D endDensity = DoubleFactory1D.sparse.make(hostCount);
         
-        for (Iterator<Double> iter = hostSpeciationSet.iterator();
-                iter.hasNext();) {
+        for (double speciationHeight : hostSpeciationSet) {
             
-            double speciationHeight = iter.next();
             DoubleMatrix2D matrix = matrices[hostCount-1];
             double t = (startHeight - speciationHeight) * rate;
             assert(matrix.columns() == startDensity.size());
@@ -420,7 +421,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                     
                 }
                 
-                if (rate != 0.0) matrix.set(j, i, rate);
+                if (Math.abs(rate) > 0.0) matrix.set(j, i, rate);
                 
             }
         }
@@ -536,7 +537,19 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             }
         }
         return map;
-        
+    }
+    
+    protected final int[] mapStatesToNone(int hostCount, int speciatedBin) {
+        assert(hostCount > 0);
+        int newStateCount = getStateCount(hostCount);
+        int[] decompressedState = new int[hostCount];
+        int[] map = new int[getStateCount(hostCount)];
+        for (int state = 0; state < newStateCount; ++state) {
+            decompressState(state, decompressedState);
+            decompressedState[speciatedBin] = 0;
+            map[state] = compressState(decompressedState);
+        }
+        return map;       
     }
     
     @Override
