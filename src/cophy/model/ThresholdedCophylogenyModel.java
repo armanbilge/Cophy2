@@ -216,23 +216,30 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             for (int i = 0; i < stateCount; ++i) {
                 int lower = i % pow;
                 int upper = i - lower;
-                int s = lower + upper * (hostCount+1);
+                int s = lower + upper * (threshold+1);
                 double d = calculateDensity(embeddedHeight, map[s],
                         hostSpeciations, rate, matrices);
                 extinctionLs[i] = d;
             }
             
             double sum = 0;
-            for (double p : childLs) {
+            for (int i = 0; i < childLs.length; ++i) {
                 double sum2 = 0.0;
-                for (double q : extinctionLs) sum2 += q;
-                sum2 *= p;
+                for (int j = 0; j < extinctionLs.length; ++j) {
+                    int lower = j % pow;
+                    int upper = j - lower;
+                    int s = lower + i * pow + upper * (threshold+1);
+                    sum2 += extinctionLs[j] * endDensity.getQuick(s);
+                }
+                sum2 *= childLs[i];
                 sum += sum2;
             }
             
             L *= sum;
             
         } else {
+            
+            // TODO fix flawed calculation
             
             double lambda = duplicationRateParameterInput.get().getValue();
             double tau = hostSwitchRateParameterInput.get().getValue();
