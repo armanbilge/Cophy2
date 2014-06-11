@@ -40,6 +40,8 @@
     <mkdir dir="${dist}"/>
     <get src="http://hudson.cs.auckland.ac.nz/job/BEAST2/lastSuccessfulBuild/artifact/build/dist/beast.jar"
 	 dest="${build-lib}/beast2.jar" />
+    <get src="http://build.compevol.org/amh11/AMH11.jar"
+     dest="${build-lib}/AMH11.jar" />
     <copy todir="${build-lib}">
       <fileset dir="${lib}" includes="*.jar"/>
     </copy>
