@@ -212,8 +212,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             L *= p1 + p2;
             
-            // TODO double-check mappings are correct
-            int[] map = mapStatesToOneLess(hostCount-1, speciatedBin);
+            int[] map = mapStatesToOneMore(hostCount-1, speciatedBin);
             int[] map1 = mapNewStatesToOld(hostCount, speciatedBin);
             
             int stateCount = getStateCount(hostCount);
@@ -541,6 +540,23 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 map[state] = -1;
             } else {
                 decompressedState[speciatedBin] -= 1;
+                map[state] = compressState(decompressedState);
+            }
+        }
+        return map;
+    }
+ 
+    protected final int[] mapStatesToOneMore(int hostCount, int speciatedBin) {
+        assert(hostCount > 0);
+        int newStateCount = getStateCount(hostCount);
+        int[] decompressedState = new int[hostCount];
+        int[] map = new int[getStateCount(hostCount)];
+        for (int state = 0; state < newStateCount; ++state) {
+            decompressState(state, decompressedState);
+            if (decompressedState[speciatedBin] >= threshold) {
+                map[state] = -1;
+            } else {
+                decompressedState[speciatedBin] += 1;
                 map[state] = compressState(decompressedState);
             }
         }
