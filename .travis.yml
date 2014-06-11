@@ -1,8 +1,19 @@
 language: java
 script: ant
 jdk:
-  - openjdk6
-  - openjdk7
-  - oraclejdk7
+- openjdk6
+- openjdk7
+- oraclejdk7
 notifications:
   email: false
+deploy:
+  provider: s3
+  access_key_id: AKIAJ4HSUQVUNZNKFJDQ
+  secret_access_key:
+    secure: dIFta2CAADeTSsC/r/9kv23n6Uk4SFJF34E9tObUl00OOIAhodG/opLn1KIReg/af/XC5YKmPXn/GvXJs/xOd2s05ds+rfcDTY0k7st79Jp/jOIFyt96rip6eUKJt5kteM3yB+/vr8fJ6U4pqjHQ/lJa15NLz1WZEr8cs1MQsFI=
+  bucket: build.compevol.org
+  local-dir: dist
+  upload-dir: cophy
+  on:
+    repo: armanbilge/Cophy
+  skip_cleanup: true
