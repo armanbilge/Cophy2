@@ -265,16 +265,11 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             state[hostBin] = 0;
 
             integrated = embeddedRight;
-            state[hostBin] = 1;
-            sum1 = pDuplication * calculateDensity(embeddedHeight,
-                    compressState(state), integrated, hostSpeciations,
-                    matrices);
-            state[hostBin] = 0;
-            sum2 = 0.0;
+            sum1 = 0.0;
             for (int i = 0; i < hostCount; ++i) {
                 if (i != hostBin) {
                     state[i] = 1;
-                    sum2 += calculateDensity(embeddedHeight,
+                    sum1 += calculateDensity(embeddedHeight,
                             compressState(state), integrated, hostSpeciations,
                             matrices);
                     state[i] = 0;
@@ -282,7 +277,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             }
 
             if (hostCount > 1)
-                sum1 += (1 - pDuplication) * sum2 / (hostCount - 1);
+                sum1 *= (1 - pDuplication) * (hostCount - 1);
 
             state[hostBin] = 1;
             sum += sum1 * calculateDensity(embeddedHeight, compressState(state),
@@ -291,7 +286,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                         
             L *= sum;
             
-            int[] map = mapStatesToOneLess(hostCount, hostBin);
+            int[] map = mapStatesToOneMore(hostCount, hostBin);
             int stateCount = getStateCount(hostCount);
             startDensity = DoubleFactory1D.dense.make(stateCount);
             for (int i = 0; i < stateCount; ++i) {
@@ -398,8 +393,9 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         for (int i = 0; i < stateCount; ++i)
             decompressedStates[i] = decompressState(i, hostCount);
         
+        // A sparse matrix would be ideal but dense is substantially faster
         DoubleMatrix2D matrix =
-                DoubleFactory2D.sparse.make(stateCount, stateCount);
+                DoubleFactory2D.dense.make(stateCount, stateCount);
         
         for (int i = 0; i < stateCount; ++i) {
             for (int j = 0; j < stateCount; ++j) {
