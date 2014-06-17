@@ -30,12 +30,15 @@ import java.util.TreeMap;
 import org.apache.commons.math.util.MathUtils;
 
 import amh11.AMH11;
+import amh11.HT00;
+import amh11.HT00.HT00Random;
 import beast.core.Input;
 import beast.core.Input.Validate;
 import beast.evolution.branchratemodel.BranchRateModel;
 import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
 import beast.math.MachineAccuracy;
+import beast.util.Randomizer;
 import cern.colt.matrix.DoubleFactory1D;
 import cern.colt.matrix.DoubleFactory2D;
 import cern.colt.matrix.DoubleMatrix1D;
@@ -59,6 +62,15 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         
         super.initAndValidate();
         threshold = thresholdInput.get();
+        
+        HT00.setRandom(new HT00Random() {
+            public boolean nextBoolean() {
+                return Randomizer.nextBoolean();
+            }
+            public double nextDouble() {
+                return Randomizer.nextDouble();
+            }
+        });
         
     }
 
