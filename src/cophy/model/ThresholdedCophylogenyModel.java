@@ -207,17 +207,19 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             
             int hostBin = hostNodes2Bins.get(host.getLeft());
             state[hostBin] = 1;
-            double p1 = calculateDensity(embeddedHeight, compressState(state),
+            int compressedState = compressState(state);
+            double p1 = calculateDensity(embeddedHeight, compressedState,
                     embeddedLeft, hostSpeciations, matrices);
-            double p2 = calculateDensity(embeddedHeight, compressState(state),
+            double p2 = calculateDensity(embeddedHeight, compressedState,
                     embeddedRight, hostSpeciations, matrices);
             state[hostBin] = 0;
 
             hostBin = hostNodes2Bins.get(host.getRight());
             state[hostBin] = 1;
-            p1 *= calculateDensity(embeddedHeight, compressState(state),
+            compressedState = compressState(state);
+            p1 *= calculateDensity(embeddedHeight, compressedState,
                     embeddedRight, hostSpeciations, matrices);
-            p2 *= calculateDensity(embeddedHeight, compressState(state),
+            p2 *= calculateDensity(embeddedHeight, compressedState,
                     embeddedLeft, hostSpeciations, matrices); 
             state[hostBin] = 0;
             
