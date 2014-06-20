@@ -76,6 +76,7 @@ public class HostSwitchOperator extends Operator {
         Node currentHostNode = reconciliation.getHost(embeddedNode);
         if (proposedHostNode.equals(currentHostNode))
             return Double.NEGATIVE_INFINITY;
+        reconciliation.setHost(embeddedNode, proposedHostNode);
         
         double hastingsRatio = 1.0;
         if (!Utils.lineageExistedAtHeight(proposedHostNode,
