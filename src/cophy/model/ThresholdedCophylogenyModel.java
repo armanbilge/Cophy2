@@ -35,7 +35,6 @@ import no.uib.cipr.matrix.Vector;
 import org.apache.commons.math.util.MathUtils;
 
 import amh11.AMH11;
-import amh11.HT00;
 import amh11.Utils.AMH11Random;
 import beast.core.Input;
 import beast.core.Input.Validate;
