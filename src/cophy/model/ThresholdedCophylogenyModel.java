@@ -147,7 +147,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             startDensity = new double[getStateCount(hostCount)];
             for (int i = 0; i < map.length; ++i) {
                 double density =
-                        map[i] != -1 ? endDensity[i] : 0;
+                        map[i] != -1 ? endDensity[map[i]] : 0;
                         startDensity[i] = density;
             }
             
