@@ -118,9 +118,10 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         double embeddedHeight = embedded.getHeight();
         
         Node host = reconciliation.getHost(embedded);
-        if (!Utils.lineageExistedAtHeight(host, embeddedHeight))
+        if (embeddedHeight == originHeight
+                || !Utils.lineageExistedAtHeight(host, embeddedHeight))
             return 0.0;
-        
+                
         double startHeight = originHeight;
         
         Map<Node,Integer> hostNodes2Bins = new HashMap<Node,Integer>();
