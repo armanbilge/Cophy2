@@ -27,6 +27,7 @@ import beast.core.Operator;
 import beast.core.parameter.RealParameter;
 import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
+import beast.math.MachineAccuracy;
 import beast.util.Randomizer;
 
 /**
@@ -75,14 +76,18 @@ public class CospeciationOperator extends Operator {
         double upperHeight = Math.min(upperHeightEmbedded, upperHeightHost);
         double range = upperHeight - hostHeight;
         
-        double newHeight;
-        if (Randomizer.nextInt(2) == 1)
-            newHeight = hostHeight;
-        else
+        double newHeight, hastingsRatio;
+        if (MachineAccuracy.same(embeddedNode.getHeight(), hostHeight)) {
             newHeight = Randomizer.nextDouble() * range + hostHeight;
-        embeddedNode.setHeight(newHeight);
+            hastingsRatio = range;
+        }
+        else {
+            newHeight = hostHeight;
+            hastingsRatio = 1 / range;
+        }
         
-        return 0.0;
+        embeddedNode.setHeight(newHeight);
+        return hastingsRatio;
         
     }
 
