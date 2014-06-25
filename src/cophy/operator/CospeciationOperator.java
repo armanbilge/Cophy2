@@ -79,15 +79,15 @@ public class CospeciationOperator extends Operator {
         double newHeight, hastingsRatio;
         if (MachineAccuracy.same(embeddedNode.getHeight(), hostHeight)) {
             newHeight = Randomizer.nextDouble() * range + hostHeight;
-            hastingsRatio = Math.log(range);
+            hastingsRatio = range;
         }
         else {
             newHeight = hostHeight;
-            hastingsRatio = Math.log(1 / range);
+            hastingsRatio = 1 / range;
         }
         
         embeddedNode.setHeight(newHeight);
-        return hastingsRatio;
+        return Math.log(hastingsRatio);
         
     }
 
