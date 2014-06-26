@@ -121,7 +121,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         NavigableSet<Double> hostSpeciationSet = hostSpeciations.subMap(
                 embeddedHeight, false, startHeight, false).descendingKeySet();
         if (hostSpeciationSet.size() > 0)
-            assert(startHeight == hostSpeciationSet.first());
+            assert(startHeight != hostSpeciationSet.first());
         DoubleMatrix1D startDensity =
                 DoubleFactory1D.dense.make(getStateCount(hostCount));
         startDensity.set(startState, 1.0);
