@@ -21,14 +21,13 @@
 
 package cophy.operator;
 
-import cophy.Reconciliation;
 import beast.core.Input;
 import beast.core.Operator;
 import beast.core.parameter.RealParameter;
 import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
-import beast.math.MachineAccuracy;
 import beast.util.Randomizer;
+import cophy.Reconciliation;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
