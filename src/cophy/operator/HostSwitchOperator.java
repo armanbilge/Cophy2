@@ -84,8 +84,8 @@ public class HostSwitchOperator extends Operator {
         int inversePotentialHosts = Utils.getLineageCountAtHeight(hostTree,
                 embeddedNode.getHeight(), false);
         
-        return Math.log(inversePotentialHosts)
-                - Math.log(potentialHosts.size());
+        return Math.log(potentialHosts.size())
+                - Math.log(inversePotentialHosts);
     }
 
 }
