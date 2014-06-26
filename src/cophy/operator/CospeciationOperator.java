@@ -76,19 +76,17 @@ public class CospeciationOperator extends Operator {
         double upperHeight = Math.min(upperHeightEmbedded, upperHeightHost);
         double range = upperHeight - hostHeight;
         
-        double newHeight, hastingsRatio;
-        if (MachineAccuracy.same(embeddedNode.getHeight(), hostHeight)) {
+        double newHeight;
+        double logHastingsRatio = Math.log(range);
+        if (embeddedNode.getHeight() == hostHeight) {
             newHeight = Randomizer.nextDouble() * range + hostHeight;
-            hastingsRatio = range;
-        }
-        else {
+        } else {
             newHeight = hostHeight;
-            hastingsRatio = 1 / range;
+            logHastingsRatio *= -1;
         }
         
         embeddedNode.setHeight(newHeight);
-        return Math.log(hastingsRatio);
-        
+        return logHastingsRatio;
     }
 
 }

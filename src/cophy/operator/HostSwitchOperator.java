@@ -64,40 +64,28 @@ public class HostSwitchOperator extends Operator {
         
         Node embeddedNode = embeddedTree.getInternalNodes()
                 .get(Randomizer.nextInt(embeddedTree.getInternalNodeCount()));
+        
         double lower = Math.max(embeddedNode.getLeft().getHeight(),
                 embeddedNode.getRight().getHeight());
         double upper = embeddedNode.isRoot() ? originHeight :
                     embeddedNode.getParent().getHeight();
-        if (upper < lower) return Double.NEGATIVE_INFINITY;
-        List<Node> potentialNewHosts =
-                Utils.getLineagesInHeightRange(hostTree, lower, upper);
-        Node proposedHostNode = potentialNewHosts.get(
-                Randomizer.nextInt(potentialNewHosts.size()));
-        Node currentHostNode = reconciliation.getHost(embeddedNode);
-        if (proposedHostNode.equals(currentHostNode))
-            return Double.NEGATIVE_INFINITY;
-        reconciliation.setHost(embeddedNode, proposedHostNode);
+        double range = upper - lower;
         
-        double hastingsRatio = 1.0;
-        if (!Utils.lineageExistedAtHeight(proposedHostNode,
-                embeddedNode.getHeight())) {
-            double hastingsLower =
-                    Math.max(lower, proposedHostNode.getHeight());
-            double hastingsUpper = Math.min(upper,
-                    proposedHostNode.isRoot() ? Double.POSITIVE_INFINITY :
-                        proposedHostNode.getParent().getHeight());
-            embeddedTree.startEditing(this);
-            embeddedNode.setHeight(Randomizer.nextDouble()
-                    * (upper - lower) + lower);
-            double inverseHastingsLower =
-                    Math.max(lower, currentHostNode.getHeight());
-            double inverseHastingsUpper = Math.min(upper,
-                    currentHostNode.isRoot() ? Double.POSITIVE_INFINITY :
-                        currentHostNode.getParent().getHeight());
-            hastingsRatio = (inverseHastingsUpper - inverseHastingsLower) /
-                    (hastingsUpper - hastingsLower);
-        }
-        return Math.log(hastingsRatio);
+        double newHeight = Randomizer.nextDouble() * range + lower;
+        
+        List<Node> potentialHosts =
+                Utils.getLineagesAtHeight(hostTree, newHeight);
+        Node newHost =
+                potentialHosts.get(Randomizer.nextInt(potentialHosts.size()));
+        
+        embeddedNode.setHeight(newHeight);
+        reconciliation.setHost(embeddedNode, newHost);
+        
+        int inversePotentialHosts = Utils.getLineageCountAtHeight(hostTree,
+                embeddedNode.getHeight(), false);
+        
+        return Math.log(inversePotentialHosts)
+                - Math.log(potentialHosts.size());
     }
 
 }
