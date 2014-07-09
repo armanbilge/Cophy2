@@ -19,6 +19,9 @@
   <property name="dist" location="dist"/>
   <property name="pack" location="${dist}/package"/>
 
+  <property name="sourceVersion" value="1.8"/>
+  <property name="targetVersion" value="1.8"/>
+
   <!-- Prepare for compilation -->
   <target name="init">
 
@@ -50,7 +53,11 @@
 
   <!-- Compile -->
   <target name="compile" depends="init">
-    <javac srcdir="${src}" destdir="${build}" includeantruntime="false">
+    <javac target="${targetVersion}"
+           source="${sourceVersion}"
+           srcdir="${src}"
+           destdir="${build}"
+           includeantruntime="false">
       <classpath>
 	<pathelement path="${classpath}"/>
 	<fileset dir="${build-lib}" includes="*.jar"/>
@@ -72,7 +79,11 @@
 
   <!-- Compile unit tests -->
   <target name="compile-test" depends="init-test,compile">
-    <javac srcdir="${test}" destdir="${build-test}" includeantruntime="false">
+    <javac target="${targetVersion}"
+           source="${sourceVersion}"
+           srcdir="${test}"
+           destdir="${build-test}"
+           includeantruntime="false">
       <classpath>
 	<pathelement path="${classpath}"/>
 	<pathelement path="${build}" />
