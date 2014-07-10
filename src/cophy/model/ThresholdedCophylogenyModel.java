@@ -40,7 +40,6 @@ import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cern.colt.matrix.tdouble.algo.DenseDoubleAlgebra;
 import cern.colt.matrix.tdouble.algo.decomposition.DenseDoubleEigenvalueDecomposition;
-import cern.jet.math.tdouble.DoubleFunctions;
 import cophy.Reconciliation;
 import cophy.Utils;
 
@@ -74,7 +73,15 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         storedDs = new DoubleMatrix2D[hostCount];
         storedVs = new DoubleMatrix2D[hostCount];
         storedVinvs = new DoubleMatrix2D[hostCount];
-        
+        for (int i = 0; i < Ds.length; ++i) {
+            DoubleMatrix2D Q = constructRateMatrix(i+1);
+            DenseDoubleEigenvalueDecomposition eigen =
+            		new DenseDoubleEigenvalueDecomposition(Q);
+            Ds[i] = eigen.getD();
+            Vs[i] = eigen.getV();
+            Vinvs[i] = DenseDoubleAlgebra.DEFAULT.inverse(eigen.getV());
+        }
+
     }
 
     public void store() {
