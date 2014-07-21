@@ -274,7 +274,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             double lambda = duplicationRateParameterInput.get().getValue();
             double tau = hostSwitchRateParameterInput.get().getValue();
             double lambdaPtau = lambda + tau;
-            if (lambdaPtau == 0) return 0.0;
+            if (lambdaPtau == 0.0) return 0.0;
             double pDuplication = lambda / lambdaPtau;
             int hostBin = hostNodes2Bins.get(host);
             
@@ -291,11 +291,12 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 for (int i = 0; i < hostCount; ++i) {
                     if (i != hostBin) {
                         state[i] = 1;
+                        int compressedState = compressState(state);
                         pIntegratedLeft += calculateDensity(embeddedHeight,
-                                compressState(state), embeddedLeft,
+                                compressedState, embeddedLeft,
                                 hostSpeciations);
                         pIntegratedRight += calculateDensity(embeddedHeight,
-                                compressState(state), embeddedRight,
+                                compressedState, embeddedRight,
                                 hostSpeciations);
                         state[i] = 0;
                     }
