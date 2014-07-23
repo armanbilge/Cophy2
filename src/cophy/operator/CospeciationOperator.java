@@ -62,9 +62,9 @@ public class CospeciationOperator extends Operator {
         if (hostNode.isLeaf()) return Double.NEGATIVE_INFINITY;
         double hostHeight = hostNode.getHeight();
         
-        double child0Height = embeddedNode.getLeft().getHeight();
-        double child1Height = embeddedNode.getRight().getHeight();
-        if (hostHeight <= Math.max(child0Height, child1Height))
+        double leftChildHeight = embeddedNode.getLeft().getHeight();
+        double rightChildHeight = embeddedNode.getRight().getHeight();
+        if (hostHeight <= Math.max(leftChildHeight, rightChildHeight))
             return Double.NEGATIVE_INFINITY;
         
         double upperHeightEmbedded = embeddedNode.isRoot() ? originHeight :
