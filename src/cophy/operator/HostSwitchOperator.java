@@ -65,6 +65,10 @@ public class HostSwitchOperator extends Operator {
         Node embeddedNode = embeddedTree.getInternalNodes()
                 .get(Randomizer.nextInt(embeddedTree.getInternalNodeCount()));
         
+        if (embeddedNode.getHeight()
+                == reconciliation.getHost(embeddedNode).getHeight())
+             return Double.NEGATIVE_INFINITY;
+        
         double lower = Math.max(embeddedNode.getLeft().getHeight(),
                 embeddedNode.getRight().getHeight());
         double upper = embeddedNode.isRoot() ? originHeight :
