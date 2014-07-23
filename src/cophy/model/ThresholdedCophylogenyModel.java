@@ -387,7 +387,11 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 int[] state = decompressedStates[i];
                 
                 if (i == j) {
-                    if (i < stateCount - 1) rate += lambda + tau;
+                    if (i < stateCount - 1) {
+                    	rate += lambda;
+                    	if (hostCount > 1)
+                    		rate += tau;
+                    }
                     rate += mu;
                     rate *= -Utils.sum(state);
                 } else {
