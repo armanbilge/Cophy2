@@ -386,15 +386,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 double rate = 0.0;
                 int[] state = decompressedStates[i];
                 
-                if (i == j) {
-                    if (i < stateCount - 1) {
-                    	rate += lambda;
-                    	if (hostCount > 1)
-                    		rate += tau;
-                    }
-                    rate += mu;
-                    rate *= -Utils.sum(state);
-                } else {
+                if (i != j) {
                     
                     int eventLocus = locateBirthEvent(state,
                             decompressedStates[j]);
@@ -414,7 +406,13 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 if (Math.abs(rate) > 0.0) matrix.setQuick(j, i, rate);
                 
             }
+            
         }
+        
+        for (int i = 0; i < stateCount; ++i) {
+        	matrix.set(i, i, -matrix.viewColumn(i).zSum());
+        }
+
         
         return matrix;
     }
