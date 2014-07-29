@@ -266,7 +266,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 pIntegratedRight /= hostCount - 1;
             }
             
-            L *= pDuplication * pSameHostLeft * pSameHostRight +
+            L *= 2 * pDuplication * pSameHostLeft * pSameHostRight +
                     (1 - pDuplication) * (pSameHostLeft * pIntegratedRight
                             + pSameHostRight * pIntegratedLeft);
             
