@@ -75,6 +75,7 @@ public class HostSwitchOperator extends Operator {
                     embeddedNode.getParent().getHeight();
         double range = upper - lower;
         
+        double oldHeight = embeddedNode.getHeight();
         double newHeight = Randomizer.nextDouble() * range + lower;
         
         List<Node> potentialHosts =
@@ -86,7 +87,7 @@ public class HostSwitchOperator extends Operator {
         reconciliation.setHost(embeddedNode, newHost);
         
         int inversePotentialHosts = Utils.getLineageCountAtHeight(hostTree,
-                embeddedNode.getHeight(), false);
+        		oldHeight, false);
         
         return Math.log(potentialHosts.size())
                 - Math.log(inversePotentialHosts);
