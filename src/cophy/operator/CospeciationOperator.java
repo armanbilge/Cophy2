@@ -78,9 +78,9 @@ public class CospeciationOperator extends Operator {
         double logHastingsRatio = Math.log(range);
         if (embeddedNode.getHeight() == hostHeight) {
             newHeight = Randomizer.nextDouble() * range + hostHeight;
+            logHastingsRatio *= -1;
         } else {
             newHeight = hostHeight;
-            logHastingsRatio *= -1;
         }
         
         embeddedNode.setHeight(newHeight);
