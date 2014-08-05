@@ -39,6 +39,7 @@ import cern.colt.matrix.tdouble.DoubleFactory1D;
 import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
+import cern.jet.math.tdouble.DoubleFunctions;
 import cophy.Reconciliation;
 import cophy.Utils;
 
@@ -157,7 +158,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                         map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
                         startDensity.setQuick(i, density);
             }
-            
+            normalize(startDensity);
         }
 
         assert(startHostLineages.size() == hostCount);
@@ -223,6 +224,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                         endDensity.getQuick(map[map1[i]]) : 0;
                 startDensity.setQuick(i, density);
             }
+            normalize(startDensity);
             
             L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
                     rate, matrices);
@@ -277,6 +279,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 double density = map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
                 startDensity.setQuick(i, density);
             }
+            normalize(startDensity);
             
             L *= calculateDensity(embeddedHeight, startDensity, hostSpeciations,
                     rate, matrices);
@@ -334,7 +337,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                         map[i] != -1 ? endDensity.getQuick(map[i]) : 0;
                         startDensity.setQuick(i, density);
             }
-            
+            normalize(startDensity);
         }
 
         assert(startHostLineages.size() == hostCount);
@@ -406,19 +409,21 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                 if (Math.abs(rate) > 0.0) matrix.setQuick(j, i, rate);
                 
             }
-            
         }
         
-        for (int i = 0; i < stateCount; ++i) {
+        for (int i = 0; i < stateCount; ++i)
         	matrix.set(i, i, -matrix.viewColumn(i).zSum());
-        }
-
         
         return matrix;
     }
     
     protected final int getStateCount(int hostCount) {
         return MathUtils.pow(threshold + 1, hostCount);
+    }
+    
+    protected static final void normalize(DoubleMatrix1D v) {
+        double sum = v.zSum();
+        v.assign(DoubleFunctions.div(sum));
     }
     
     protected final int compressState(int[] decompressedState) {
