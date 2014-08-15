@@ -98,9 +98,6 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
         
     }
 
-    protected double logP;
-    protected double storedLogP;
-    
     @Override
     public double calculateLogP() throws Exception {
         if (isDirtyCalculation()) logP = calculateLogDensity();
