@@ -21,6 +21,8 @@
 
 package cophy.model;
 
+import static org.apache.commons.math.special.Gamma.logGamma;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,7 @@ import cern.colt.matrix.tdouble.DoubleFactory2D;
 import cern.colt.matrix.tdouble.DoubleMatrix1D;
 import cern.colt.matrix.tdouble.DoubleMatrix2D;
 import cophy.Reconciliation;
-import cophy.Utils;
+import cophy.Util;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
@@ -86,8 +88,11 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         double density = calculateDensity(originHeight, 1,
                 embeddedTree.getRoot(), hostSpeciations, matrices);
         assert(!Double.isNaN(Math.log(density)));
-        return Math.log(density);
-        
+        int taxonCount = embeddedTree.getLeafNodeCount();
+        double logL = Math.log(density)
+                + (taxonCount - 1) * Math.log(2.0)
+                - logGamma(taxonCount + 1) - logGamma(taxonCount);
+        return logL;
     }
     
     protected double calculateDensity(double originHeight, int startState,
@@ -106,13 +111,13 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         
         Node host = reconciliation.getHost(embedded);
         if (embeddedHeight == originHeight
-                || !Utils.lineageExistedAtHeight(host, embeddedHeight))
+                || !Util.lineageExistedAtHeight(host, embeddedHeight))
             return 0.0;
                 
         double startHeight = originHeight;
         
         Map<Node,Integer> hostNodes2Bins = new HashMap<Node,Integer>();
-        List<Node> startHostLineages = Utils.getLineagesAtHeight(hostTree,
+        List<Node> startHostLineages = Util.getLineagesAtHeight(hostTree,
                 startHeight, true);
         int hostCount = startHostLineages.size();
         for (int i = 0; i < hostCount; ++i)
@@ -142,7 +147,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             speciatedBin = hostNodes2Bins.get(
                     hostSpeciations.get(speciationHeight));
             hostNodes2Bins.clear();
-            startHostLineages = Utils.getLineagesAtHeight(hostTree, startHeight,
+            startHostLineages = Util.getLineagesAtHeight(hostTree, startHeight,
                     true);
             for (int i = 0; i < hostCount; ++i)
                 hostNodes2Bins.put(startHostLineages.get(i), i);
@@ -189,7 +194,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             state = new int[hostCount];
             hostNodes2Bins.clear();
             startHostLineages =
-                    Utils.getLineagesAtHeight(hostTree, embeddedHeight, true);
+                    Util.getLineagesAtHeight(hostTree, embeddedHeight, true);
             for (int i = 0; i < hostCount; ++i)
                 hostNodes2Bins.put(startHostLineages.get(i), i);
             
@@ -298,7 +303,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         Tree hostTree = hostTreeInput.get();
                         
         Map<Node,Integer> hostNodes2Bins = new HashMap<Node,Integer>();
-        List<Node> startHostLineages = Utils.getLineagesAtHeight(hostTree,
+        List<Node> startHostLineages = Util.getLineagesAtHeight(hostTree,
                 startHeight, true);
         int hostCount = startHostLineages.size();
         for (int i = 0; i < hostCount; ++i)
@@ -320,7 +325,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
             speciatedBin = hostNodes2Bins.get(
                     hostSpeciations.get(speciationHeight));
             hostNodes2Bins.clear();
-            startHostLineages = Utils.getLineagesAtHeight(hostTree, startHeight,
+            startHostLineages = Util.getLineagesAtHeight(hostTree, startHeight,
                     true);
             for (int i = 0; i < hostCount; ++i)
                 hostNodes2Bins.put(startHostLineages.get(i), i);
@@ -394,7 +399,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
                     if (eventLocus != -1) {
                         rate += state[eventLocus] * lambda;
                         if (hostCount > 1)
-                            rate += (Utils.sum(state) - state[eventLocus]) /
+                            rate += (Util.sum(state) - state[eventLocus]) /
                                     (hostCount - 1) * tau;
                     }
                     

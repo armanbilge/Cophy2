@@ -25,17 +25,20 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.apache.commons.math3.stat.StatUtils;
+
 import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
 import beast.math.MachineAccuracy;
+import beast.util.Randomizer;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
  *
  */
-public final class Utils {
+public final class Util {
 
-    private Utils() {}
+    private Util() {}
 
     public static final List<Node> getLineagesInHeightRange(Tree tree,
             double lower, double upper) {
@@ -196,6 +199,52 @@ public final class Utils {
         int sum = 0;
         for (int v : values) sum += v;
         return sum;
+        
+    }
+        
+    public static final int nextWeightedInteger(final double...weights) {
+        
+        final double sum = StatUtils.sum(weights);
+        
+        final double[] normalizedCDF = new double[weights.length - 1];
+        normalizedCDF[0] = weights[0] / sum;
+        for (int i = 1; i < normalizedCDF.length; ++i)
+            normalizedCDF[i] = weights[i] / sum + normalizedCDF[i - 1];
+        
+        final double U = 1 - Randomizer.nextDouble();        
+        int i;
+        for (i = 0; i < normalizedCDF.length && normalizedCDF[i] < U; ++i);
+        return i;
+        
+    }
+    
+    public static final double nextPoissonTime(final double...lambdas) {
+        
+        final double lambda = StatUtils.sum(lambdas);
+        return Randomizer.nextExponential(lambda);
+        
+    }
+    
+    public static final <T> Particle<T>[] resample(Particle<T>[] particles) {
+        
+        final double[] weightsCDF = new double[particles.length - 1];
+        @SuppressWarnings("unchecked")
+        final Particle<T>[] resampled = new Particle[particles.length];
+        
+        double sum = 0.0;
+        for (int i = 0; i < particles.length - 1; ++i) {
+            sum += particles[i].getWeight();
+            weightsCDF[i] = sum;
+        }
+        
+        for (int i = 0; i < particles.length; ++i) {
+            final double U = 1 - Randomizer.nextDouble();        
+            int j;
+            for (j = 0; j < weightsCDF.length && weightsCDF[j] < U; ++j);
+            resampled[i] = particles[j];
+        }
+        
+        return resampled;
         
     }
     

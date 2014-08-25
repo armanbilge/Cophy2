@@ -30,7 +30,7 @@ import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
 import beast.util.Randomizer;
 import cophy.Reconciliation;
-import cophy.Utils;
+import cophy.Util;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
@@ -79,14 +79,14 @@ public class HostSwitchOperator extends Operator {
         double newHeight = Randomizer.nextDouble() * range + lower;
         
         List<Node> potentialHosts =
-                Utils.getLineagesAtHeight(hostTree, newHeight);
+                Util.getLineagesAtHeight(hostTree, newHeight);
         Node newHost =
                 potentialHosts.get(Randomizer.nextInt(potentialHosts.size()));
         
         embeddedNode.setHeight(newHeight);
         reconciliation.setHost(embeddedNode, newHost);
         
-        int inversePotentialHosts = Utils.getLineageCountAtHeight(hostTree,
+        int inversePotentialHosts = Util.getLineageCountAtHeight(hostTree,
                 oldHeight, false);
         
         return Math.log(potentialHosts.size())

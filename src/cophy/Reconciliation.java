@@ -76,10 +76,10 @@ public class Reconciliation extends IntegerParameter implements Function {
         }
         
         for (Node embeddedNode : embeddedTree.getInternalNodes()) {
-            List<Node> potentialHosts = Utils.getLineagesAtHeight(hostTree,
+            List<Node> potentialHosts = Util.getLineagesAtHeight(hostTree,
                     embeddedNode.getHeight());
             int r = Randomizer.nextInt(potentialHosts.size());
-            assert(Utils.lineageExistedAtHeight(potentialHosts.get(r), embeddedNode.getHeight()));
+            assert(Util.lineageExistedAtHeight(potentialHosts.get(r), embeddedNode.getHeight()));
             setHostInit(embeddedNode, potentialHosts.get(r));
         }
         
