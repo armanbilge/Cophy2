@@ -111,6 +111,6 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
         throw new RuntimeException("Not implemented yet!");
     }
 
-    protected abstract double getOverallRate(Node embedded, Node host);
+    protected abstract double getBranchRate(Node embedded, Node host);
     
 }

@@ -24,6 +24,7 @@ package cophy;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.apache.commons.math3.stat.StatUtils;
 
@@ -225,27 +226,61 @@ public final class Util {
         
     }
     
-    public static final <T> Particle<T>[] resample(Particle<T>[] particles) {
+    public static final <T> void resample(Particle<T>[] particles) {
         
         final double[] weightsCDF = new double[particles.length - 1];
         @SuppressWarnings("unchecked")
-        final Particle<T>[] resampled = new Particle[particles.length];
+        final Particle<T>[] particlesCopy = new Particle[particles.length];
         
         double sum = 0.0;
         for (int i = 0; i < particles.length - 1; ++i) {
             sum += particles[i].getWeight();
             weightsCDF[i] = sum;
+            particlesCopy[i] = particles[i];
         }
         
         for (int i = 0; i < particles.length; ++i) {
             final double U = 1 - Randomizer.nextDouble();        
             int j;
             for (j = 0; j < weightsCDF.length && weightsCDF[j] < U; ++j);
-            resampled[i] = particles[j];
+            particles[i] = particlesCopy[j];
+        }
+                
+    }
+    
+    @SuppressWarnings("unchecked")
+    public static final <T extends Particle<?>> void resample(
+            List<T> particles) {
+        
+        final double[] weightsCDF = new double[particles.size() - 1];
+        final T[] particlesCopy = (T[]) new Particle[particles.size()];
+        
+        double sum = 0.0;
+        for (int i = 0; i < particlesCopy.length; ++i) {
+            T particle = particles.get(i);
+            sum += particle.getWeight();
+            weightsCDF[i] = sum;
+            particlesCopy[i] = particle;
         }
         
-        return resampled;
+        IntStream.range(0, particlesCopy.length).forEach(i -> {
+            final double U = 1 - Randomizer.nextDouble();        
+            int j;
+            for (j = 0; j < weightsCDF.length && weightsCDF[j] < U; ++j);
+            T particle = (T) particlesCopy[j].clone();
+            particle.resetWeight();
+            particles.set(i, particle);
+        });
         
+    }
+    
+    public static final boolean isLeft(Node node) {
+        if (node.isRoot()) throw new IllegalArgumentException();
+        return node.getParent().getLeft() == node;
+    }
+    
+    public static final <T> T getRandomElement(List<T> list) {
+        return list.get(Randomizer.nextInt(list.size()));
     }
     
     /**

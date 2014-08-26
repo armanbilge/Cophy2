@@ -1,3 +1,24 @@
+/**
+ * ThresholdedCophylogenyModel.java
+ * 
+ * Cophy: Cophylogenetics for BEAST 2
+ * 
+ * Copyright (C) 2014 Arman D. Bilge <armanbilge@gmail.com>
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package cophy.sim;
 
 import java.util.List;
@@ -7,6 +28,11 @@ import beast.evolution.tree.Tree;
 import beast.util.Randomizer;
 import cophy.Util;
 
+/**
+ * 
+ * @author Arman D. Bilge <armanbilge@gmail.com>
+ *
+ */
 public class DHSLSim {
 
     private Tree host;
@@ -16,7 +42,8 @@ public class DHSLSim {
     private double origin;
     private boolean complete;
     
-    private static final String RECONCILIATION = "reconciliation";
+    public static final String RECONCILIATION = "reconciliation";
+    private static final String EXTINCT = "extinct";
     
     public DHSLSim(Tree host, double lambda, double tau, double mu,
             double origin, boolean complete) {
@@ -40,27 +67,29 @@ public class DHSLSim {
         
         for (final Node node : tree.getExternalNodes()) {
             
-            final Node replacement = simulateSubtree(node,
-                    (Node) node.getMetaData(RECONCILIATION), node.getHeight(),
-                    until);
-            
-            if (replacement == null) {
-                if (node.isRoot()) {
-                    return null;
-                } else {
-                    final Node parent = node.getParent();
-                    final Node sister = parent.getLeft() == node ?
-                            parent.getRight() : parent.getLeft();
-                    if (parent.isRoot()) {
-                        tree.setRoot(sister);
+            if (!(Boolean) node.getMetaData(EXTINCT)) {
+                
+                final Node replacement = simulateSubtree(node,
+                        (Node) node.getMetaData(RECONCILIATION),
+                        node.getHeight(), until);
+                
+                if (!complete && replacement == null) {
+                    if (node.isRoot()) {
+                        return null;
                     } else {
-                        final Node parentParent = parent.getParent();
-                        final boolean parentIsLeft =
-                                parentParent.getLeft() == parent;
-                        if (parentIsLeft)
-                            parentParent.setLeft(sister);
-                        else
-                            parentParent.setRight(sister);
+                        final Node parent = node.getParent();
+                        final Node sister = Util.isLeft(node) ?
+                                parent.getRight() : parent.getLeft();
+                        if (parent.isRoot()) {
+                            tree.setRoot(sister);
+                        } else {
+                            final Node parentParent = parent.getParent();
+                            final boolean parentIsLeft = Util.isLeft(parent);
+                            if (parentIsLeft)
+                                parentParent.setLeft(sister);
+                            else
+                                parentParent.setRight(sister);
+                        }
                     }
                 }
             }
@@ -116,16 +145,23 @@ public class DHSLSim {
                 break;
             case 1: // Loss event
                 if (!complete) return null;
+                node.setMetaData(EXTINCT, true);
                 leftHost = null;
                 rightHost = null;
                 break;
             case 2: // Host-switch event
-                leftHost = null;
+                final Node host1 = host;
                 final List<Node> potentialHosts =
                         Util.getLineagesAtHeight(this.host, height);
                 potentialHosts.remove(host);
-                final int r = Randomizer.nextInt(potentialHosts.size());
-                rightHost = potentialHosts.get(r);
+                final Node host2 = Util.getRandomElement(potentialHosts);
+                if (Randomizer.nextBoolean()) {
+                    leftHost = host1;
+                    rightHost = host2;
+                } else {
+                    leftHost = host1;
+                    rightHost = host2;
+                }
             default:
                 throw new RuntimeException();
             }

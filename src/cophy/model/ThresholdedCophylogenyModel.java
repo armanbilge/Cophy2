@@ -564,7 +564,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
     }
     
     @Override
-    protected double getOverallRate(Node embedded, Node host) {
+    protected double getBranchRate(Node embedded, Node host) {
         
         BranchRateModel branchRateModel = branchRateModelInput.get();
         return branchRateModel.getRateForBranch(embedded);
