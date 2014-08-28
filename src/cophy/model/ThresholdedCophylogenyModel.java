@@ -34,7 +34,6 @@ import org.apache.commons.math.util.MathUtils;
 import amh11.AMH11;
 import beast.core.Input;
 import beast.core.Input.Validate;
-import beast.evolution.branchratemodel.BranchRateModel;
 import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
 import cern.colt.matrix.tdouble.DoubleFactory1D;
@@ -104,8 +103,7 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         Tree hostTree = hostTreeInput.get();
         Reconciliation reconciliation = reconciliationInput.get();
         
-        BranchRateModel branchRateModel = branchRateModelInput.get();
-        double rate = branchRateModel.getRateForBranch(embedded);
+        double rate = rateParameterInput.get().getValue();
         
         double embeddedHeight = embedded.getHeight();
         
@@ -562,13 +560,5 @@ public class ThresholdedCophylogenyModel extends EmbeddedTreeDistribution {
         }
         return map;       
     }
-    
-    @Override
-    protected double getBranchRate(Node embedded, Node host) {
         
-        BranchRateModel branchRateModel = branchRateModelInput.get();
-        return branchRateModel.getRateForBranch(embedded);
-        
-    }
-    
 }

@@ -1,5 +1,5 @@
 /**
- * Utils.java
+ * Util.java
  * 
  * Cophy: Cophylogenetics for BEAST 2
  * 

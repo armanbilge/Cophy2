@@ -1,5 +1,5 @@
 /**
- * ThresholdedCophylogenyModel.java
+ * DHSLModel.java
  * 
  * Cophy: Cophylogenetics for BEAST 2
  * 
@@ -38,7 +38,7 @@ import beast.util.Randomizer;
 import cophy.Particle.TreeParticle;
 import cophy.Reconciliation;
 import cophy.Util;
-import cophy.sim.DHSLSim;
+import cophy.simulation.DHSLSimulator;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
@@ -55,7 +55,7 @@ public class DHSLModel extends EmbeddedTreeDistribution {
     
     protected int particleCount;
     protected List<TreeParticle> particles;
-    protected DHSLSim simulator; 
+    protected DHSLSimulator simulator; 
     
     public void initAndValidate() {
         super.initAndValidate();
@@ -66,23 +66,41 @@ public class DHSLModel extends EmbeddedTreeDistribution {
     @Override
     protected double calculateLogDensity() {
         
-        simulator = new DHSLSim(hostTreeInput.get(),
-                duplicationRateParameterInput.get().getValue(),
-                hostSwitchRateParameterInput.get().getValue(),
-                lossRateParameterInput.get().getValue(),
+        if (!isValid()) return Double.NEGATIVE_INFINITY;
+        
+        final double rate = rateParameterInput.get().getValue();
+        simulator = new DHSLSimulator(hostTreeInput.get(),
+                duplicationRateParameterInput.get().getValue() * rate,
+                hostSwitchRateParameterInput.get().getValue() * rate,
+                lossRateParameterInput.get().getValue() * rate,
                 originHeightParameterInput.get().getValue(),
                 true);
         
+        generateParticles();
+        
+        return 0;
+    }
+    
+    protected boolean isValid() {
+        
         final Tree embedded = embeddedTreeInput.get();
         final Reconciliation reconciliation = reconciliationInput.get();
-                
+        
         for (int i = 0; i < embedded.getNodeCount(); ++i) {
             final Node node = embedded.getNode(i);
             final Node host = reconciliation.getHost(node);
             if (!Util.lineageExistedAtHeight(host, node.getHeight()))
-                return Double.NEGATIVE_INFINITY;
+                return false;
         }
         
+        return true;
+    }
+        
+    protected void generateParticles() {
+        
+        final Tree embedded = embeddedTreeInput.get();
+        final Reconciliation reconciliation = reconciliationInput.get();
+                
         final NavigableMap<Double,Node> heights2Nodes =
                 new TreeMap<Double,Node>();
         for (Node node : embedded.getInternalNodes())
@@ -102,7 +120,7 @@ public class DHSLModel extends EmbeddedTreeDistribution {
             
             final List<Node> potentialCompletes =
                     tree.getExternalNodes().stream()
-                    .filter(n -> n.getMetaData(DHSLSim.RECONCILIATION)
+                    .filter(n -> n.getMetaData(DHSLSimulator.RECONCILIATION)
                             .equals(host)).collect(Collectors.toList());
             
             final int size = potentialCompletes.size();
@@ -144,7 +162,7 @@ public class DHSLModel extends EmbeddedTreeDistribution {
                     potentialCompletes = head.getAllLeafNodes();
                 
                 potentialCompletes = potentialCompletes.stream()
-                        .filter(n -> n.getMetaData(DHSLSim.RECONCILIATION)
+                        .filter(n -> n.getMetaData(DHSLSimulator.RECONCILIATION)
                         .equals(host)).collect(Collectors.toList());
  
                 final int size = potentialCompletes.size();
@@ -169,14 +187,16 @@ public class DHSLModel extends EmbeddedTreeDistribution {
             simulator.resumeSimulation(tree, 0.0);
         });
         
-        return 0;
     }
     
     protected void simulateSpeciation(final TreeParticle particle,
             final Node reconstructed, final Node complete, final Node host) {
         
-        final double lambda = duplicationRateParameterInput.get().getValue();
-        final double tau = hostSwitchRateParameterInput.get().getValue();
+        final double rate = rateParameterInput.get().getValue();
+        final double lambda =
+                duplicationRateParameterInput.get().getValue() * rate;
+        final double tau =
+                hostSwitchRateParameterInput.get().getValue() * rate;
         final double lambdaPtau = lambda + tau;
         
         final double height = reconstructed.getHeight();
@@ -187,18 +207,18 @@ public class DHSLModel extends EmbeddedTreeDistribution {
         
         final Node child1 = new Node();
         final Node child2 = new Node();
-        child1.setMetaData(DHSLSim.RECONCILIATION, host);
+        child1.setMetaData(DHSLSimulator.RECONCILIATION, host);
         child1.setHeight(height);
         child2.setHeight(height);
         
         if (Randomizer.nextDouble() < lambda / lambdaPtau) { // Duplication
-            child2.setMetaData(DHSLSim.RECONCILIATION, host);
+            child2.setMetaData(DHSLSimulator.RECONCILIATION, host);
         } else { // Host-switch
             List<Node> potentialHosts = Util.getLineagesAtHeight(hostTree,
                     height);
             potentialHosts.remove(host);
             final int r = Randomizer.nextInt(potentialHosts.size());
-            child2.setMetaData(DHSLSim.RECONCILIATION, potentialHosts.get(r));
+            child2.setMetaData(DHSLSimulator.RECONCILIATION, potentialHosts.get(r));
         }
         
         if (Randomizer.nextBoolean()) {
@@ -213,11 +233,4 @@ public class DHSLModel extends EmbeddedTreeDistribution {
         
     }
     
-    @Override
-    protected double getBranchRate(Node embedded, Node host) {
-        
-        
-        return 0;
-    }
-
 }

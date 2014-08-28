@@ -1,5 +1,5 @@
 /**
- * ThresholdedCophylogenyModel.java
+ * DHSLSim.java
  * 
  * Cophy: Cophylogenetics for BEAST 2
  * 
@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package cophy.sim;
+package cophy.simulation;
 
 import java.util.List;
 
@@ -33,19 +33,19 @@ import cophy.Util;
  * @author Arman D. Bilge <armanbilge@gmail.com>
  *
  */
-public class DHSLSim {
+public class DHSLSimulator {
 
-    private Tree host;
-    private double lambda;
-    private double tau;
-    private double mu;
-    private double origin;
-    private boolean complete;
-    
     public static final String RECONCILIATION = "reconciliation";
     private static final String EXTINCT = "extinct";
     
-    public DHSLSim(Tree host, double lambda, double tau, double mu,
+    protected Tree host;
+    protected double lambda;
+    protected double tau;
+    protected double mu;
+    protected double origin;
+    protected boolean complete;
+    
+    public DHSLSimulator(Tree host, double lambda, double tau, double mu,
             double origin, boolean complete) {
         this.host = host;
         this.lambda = lambda;
@@ -194,7 +194,7 @@ public class DHSLSim {
     
 	public static Tree simulateTree(Tree host, double lambda, double tau,
 	        double mu, double origin, boolean complete) {
-		return new DHSLSim(host, lambda, tau, mu, origin, complete)
+		return new DHSLSimulator(host, lambda, tau, mu, origin, complete)
 		    .simulateTree();
 	}
 		

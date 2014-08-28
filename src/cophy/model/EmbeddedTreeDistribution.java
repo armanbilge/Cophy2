@@ -25,16 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import cophy.Reconciliation;
 import beast.core.CalculationNode;
 import beast.core.Distribution;
 import beast.core.Input;
-import beast.core.State;
 import beast.core.Input.Validate;
+import beast.core.State;
 import beast.core.parameter.RealParameter;
-import beast.evolution.branchratemodel.BranchRateModel;
-import beast.evolution.tree.Node;
 import beast.evolution.tree.Tree;
+import cophy.Reconciliation;
 
 /**
  * @author Arman D. Bilge <armanbilge@gmail.com>
@@ -49,8 +47,8 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
                     "The tree-tree mapping.", Validate.REQUIRED);
     public Input<Tree> hostTreeInput = new Input<Tree>("hostTree",
             "The tree hosting the embedded tree.", Validate.REQUIRED);
-    public Input<BranchRateModel> branchRateModelInput =
-            new Input<BranchRateModel>("clockModel", "The clock model.",
+    public Input<RealParameter> rateParameterInput =
+            new Input<RealParameter>("rate", "The overall event rate.",
                     Validate.REQUIRED);
     public Input<RealParameter> originHeightParameterInput =
             new Input<RealParameter>("originHeight", "The height of origin" +
@@ -89,7 +87,7 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
         
         List<String> conditions = new ArrayList<String>();
         conditions.add(hostTreeInput.get().getID());
-        conditions.add(((CalculationNode) branchRateModelInput.get()).getID());
+        conditions.add(((CalculationNode) rateParameterInput.get()).getID());
         conditions.add(originHeightParameterInput.get().getID());
         conditions.add(duplicationRateParameterInput.get().getID());
         conditions.add(hostSwitchRateParameterInput.get().getID());
@@ -111,6 +109,4 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
         throw new RuntimeException("Not implemented yet!");
     }
 
-    protected abstract double getBranchRate(Node embedded, Node host);
-    
 }

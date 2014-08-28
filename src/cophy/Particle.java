@@ -1,5 +1,5 @@
 /**
- * ThresholdedCophylogenyModel.java
+ * Particle.java
  * 
  * Cophy: Cophylogenetics for BEAST 2
  * 
