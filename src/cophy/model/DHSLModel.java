@@ -51,7 +51,7 @@ public class DHSLModel extends EmbeddedTreeDistribution {
     public Input<Integer> particleCountInput =
             new Input<Integer>("particleCount",
             "The number of particles to simulate.",
-            100);
+            512);
     
     protected int particleCount;
     protected List<TreeParticle> particles;
@@ -68,6 +68,9 @@ public class DHSLModel extends EmbeddedTreeDistribution {
         
         if (!isValid()) return Double.NEGATIVE_INFINITY;
         
+        final Tree embeddedTree = embeddedTreeInput.get();
+        final Reconciliation reconciliation = reconciliationInput.get();
+        
         final double rate = rateParameterInput.get().getValue();
         simulator = new DHSLSimulator(hostTreeInput.get(),
                 duplicationRateParameterInput.get().getValue() * rate,
@@ -78,7 +81,54 @@ public class DHSLModel extends EmbeddedTreeDistribution {
         
         generateParticles();
         
-        return 0;
+        particles.stream().forEach(particle -> {
+            
+            final Tree completeTree = particle.getValue();
+            
+            if (embeddedTree.getLeafNodeCount()
+                    != Util.getLineageCountAtHeight(completeTree, 0.0, false)) {
+                particle.muliWeight(0.0);
+                return;
+            }
+            
+            embeddedTree.getExternalNodes().stream().forEach(leaf -> {
+                
+                final Node host = reconciliation.getHost(leaf);
+                
+                final Node completeParent =
+                        particle.getNodeMap().get(leaf.getParent());
+                List<Node> potentialCompletes;
+                
+                final Node head;
+                if (Util.isLeft(leaf))
+                    head = completeParent.getLeft();
+                else
+                    head = completeParent.getRight();
+
+                if (head.isLeaf())
+                    potentialCompletes = Arrays.asList(head);
+                else
+                    potentialCompletes = head.getAllLeafNodes();
+                
+                potentialCompletes = potentialCompletes.stream()
+                        .filter(n -> n.getMetaData(DHSLSimulator.RECONCILIATION)
+                        .equals(host)).collect(Collectors.toList());
+ 
+                final int size = potentialCompletes.size();
+                if (size == 0) {
+                    particle.muliWeight(0.0);
+                    return;
+                }
+                
+            });
+            
+        });
+        
+        final double p = particles.stream()
+                .filter(particle -> particle.getWeight() > 0).count()
+                / particleCount;
+        
+        return Math.log(p);
     }
     
     protected boolean isValid() {
