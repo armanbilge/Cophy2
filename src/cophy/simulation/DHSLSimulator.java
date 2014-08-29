@@ -60,7 +60,9 @@ public class DHSLSimulator {
     }
     
     public Tree simulateTree(double until) {
-        return new Tree(simulateSubtree(host.getRoot(), origin, until));
+        final Node root = simulateSubtree(host.getRoot(), origin, until);
+        root.labelInternalNodes(0);
+        return new Tree(root);
     }
     
     public Tree resumeSimulation(Tree tree, double until) {
@@ -95,6 +97,8 @@ public class DHSLSimulator {
             }
         }
         
+        tree.getRoot().labelInternalNodes(0);
+        tree.setRoot(tree.getRoot());
         return tree;
         
     }

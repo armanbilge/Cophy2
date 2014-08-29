@@ -48,7 +48,7 @@ public abstract class EmbeddedTreeDistribution extends Distribution {
     public Input<Tree> hostTreeInput = new Input<Tree>("hostTree",
             "The tree hosting the embedded tree.", Validate.REQUIRED);
     public Input<RealParameter> rateParameterInput =
-            new Input<RealParameter>("rate", "The overall event rate.",
+            new Input<RealParameter>("overallRate", "The overall event rate.",
                     Validate.REQUIRED);
     public Input<RealParameter> originHeightParameterInput =
             new Input<RealParameter>("originHeight", "The height of origin" +

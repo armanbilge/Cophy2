@@ -61,6 +61,7 @@ public class DHSLModel extends EmbeddedTreeDistribution {
         super.initAndValidate();
         particleCount = particleCountInput.get();
         particles = new ArrayList<TreeParticle>(particleCount);
+        IntStream.range(0, particleCount).forEach(i -> particles.add(null));
     }
     
     @Override
